@@ -33,6 +33,12 @@
     <Reference Include="System" />
     <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Mvc, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.4.0.20710.0\lib\net40\System.Web.Mvc.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -40,6 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SqlHelper.cs" />
+    <Compile Include="Tools\ConvertExt.cs" />
     <Compile Include="Entities\Announce.cs">
       <DependentUpon>TableEntities.tt</DependentUpon>
     </Compile>
@@ -106,11 +114,13 @@
       <DependentUpon>TableEntities.tt</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SqlHelper.cs" />
+    <Compile Include="Tools\EncryptHelper.cs" />
+    <Compile Include="Tools\EnumExt.cs" />
+    <Compile Include="Tools\GeneRandomNum.cs" />
+    <Compile Include="Tools\ValidateCodeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="Enum\" />
-    <Folder Include="Tools\" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Entities\TableEntities.tt">
