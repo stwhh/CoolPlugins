@@ -31,7 +31,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Core" />
+    <Reference Include="System.Drawing" />
+    <Reference Include="System.Web" />
+    <Reference Include="System.Web.Mvc, Version=4.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>..\packages\Microsoft.AspNet.Mvc.4.0.20710.0\lib\net40\System.Web.Mvc.dll</HintPath>
+    </Reference>
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="Microsoft.CSharp" />
@@ -39,12 +46,92 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SqlHelper.cs" />
+    <Compile Include="Tools\ConvertExt.cs" />
+    <Compile Include="Entities\Announce.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\AnnounceType.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\AskForLeave.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\AskForLeaveType.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Department.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\File.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\FileType.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Permisson.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Position.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Project.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Project_Discuss.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Purchase.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Reim.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Role.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Role_Permisson.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Sex.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\sysdiagrams.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\TableEntities.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\Trip.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\User.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
+    <Compile Include="Entities\User_Role.cs">
+      <DependentUpon>TableEntities.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Tools\EncryptHelper.cs" />
+    <Compile Include="Tools\EnumExt.cs" />
+    <Compile Include="Tools\GeneRandomNum.cs" />
+    <Compile Include="Tools\ValidateCodeHelper.cs" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="Entities\" />
     <Folder Include="Enum\" />
-    <Folder Include="Tools\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Entities\TableEntities.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+      <LastGenOutput>TableEntities.cs</LastGenOutput>
+    </None>
+    <None Include="Entities\DbHelper.ttinclude" />
+    <None Include="Entities\Manager.ttinclude" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{508349B6-6B84-4DF5-91F0-309BEEBAD82D}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
