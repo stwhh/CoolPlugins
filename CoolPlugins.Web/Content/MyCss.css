@@ -1,0 +1,15 @@
+﻿body {
+}
+
+.footer {
+    height:30px;
+    padding-left:30%;
+}
+
+.footer li {
+    line-height: 32px;
+    color: #939393;
+    font-size: 12px;
+    padding-left: 10px;
+    padding-right: 10px;
+}
