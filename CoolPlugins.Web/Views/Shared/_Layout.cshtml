@@ -20,45 +20,60 @@
 
 </head>
 <body>
-    <nav class="navbar navbar-inverse navbar-fixed-top ">
-        <div class="container-fluid">
-	    <!--品牌Logo和获得更好的移动分组切换显示-->
-            <div class="navbar-header">
-                <a class="navbar-brand" href="#"><b>酷炫插件网</b></a>
-                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#base-example">
-                    <span class="sr-only">sr-only 把元素隐藏</span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                    <span class="icon-bar"></span>
-                </button>
-            </div>
-		
-            <!--收集导航链接、表单和其他内容的切换-->
-            <div class="collapse navbar-collapse" id="base-example">
-                <ul class="nav navbar-nav navbar-right">
-                    <li><a href="http://www.jq22.com/chm/jquery1.8.3.html" target="_blank"><i class="fa fa-book"></i>&nbsp;Jquery文档</a></li>
-                    <li><a href="http://code.jquery.com/jquery-1.12.1.min.js" download><i class="fa fa-download"></i>&nbsp;Jquery下载</a></li>
-                    <li><a href="http://www.w3school.com.cn/tiy/t.asp?f=jquery_hide"  target="_blank"><i class="fa fa-cloud"></i>&nbsp;在线js</a></li>
-                    <li><a href="#"><i class="fa fa-user"></i>&nbsp;登录/注册</a></li>
-                    
-                </ul>
-            </div>
-
+<!--顶部导航栏-->
+<nav class="navbar navbar-inverse navbar-fixed-top ">
+    <div class="container-fluid">
+        <!--品牌Logo和获得更好的移动分组切换显示-->
+        <div class="navbar-header">
+            <a class="navbar-brand" href="#"><b>酷炫插件网</b></a>
+            <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#base-example">
+                <span class="sr-only">sr-only 把元素隐藏</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
         </div>
-    </nav>  
-@RenderBody()
+
+        <!--收集导航链接、表单和其他内容的切换-->
+        <div class="collapse navbar-collapse" id="base-example">
+            <ul class="nav navbar-nav navbar-right">
+                <li><a href="http://www.jq22.com/chm/jquery1.8.3.html" target="_blank"><i class="fa fa-book"></i>&nbsp;Jquery文档</a></li>
+                <li><a href="http://code.jquery.com/jquery-1.12.1.min.js" download><i class="fa fa-download"></i>&nbsp;Jquery下载</a></li>
+                <li><a href="http://www.w3school.com.cn/tiy/t.asp?f=jquery_hide" target="_blank"><i class="fa fa-cloud"></i>&nbsp;在线js</a></li>
+                <li><a href="http://www.bejson.com/" target="_blank"><i class="fa fa-align-justify"></i>&nbsp;json格式化</a></li>
+                <li><a href="#"><i class="fa fa-user"></i>&nbsp;登录/注册</a></li>
+
+            </ul>
+        </div>
+
+    </div>
+</nav>
+
+<div class="container-fluid mbody ">
+    <!--中间-->
+    <div class="col-lg-1 visible-lg">左侧</div>
+    <!--中间-->
+    <div class="col-lg-9 col-md-12 col-sm-12 ">
+        @RenderBody()
+    </div>
+    <!--右侧-->
+    <div class="col-lg-2 visible-lg">呵呵</div>
+
+</div>
 
 @Scripts.Render("~/bundles/jquery")
 @RenderSection("scripts", required: false)
-    <nav class="footer navbar-inverse navbar-fixed-bottom ">
-        <div class="container-fluid">
-            <ul class="list-inline">
-                <li>备案号：</li>
-                <li>版权所有</li>
-                <li></li>
-            </ul>
 
-        </div>
-    </nav> 
+<!--底部-->
+<nav class="footer navbar-inverse navbar-fixed-bottom ">
+    <div class="container-fluid">
+        <ul class="list-inline">
+            <li>备案号：</li>
+            <li>版权所有</li>
+            <li></li>
+        </ul>
+
+    </div>
+</nav>
 </body>
 </html>

@@ -13,3 +13,24 @@
     padding-left: 10px;
     padding-right: 10px;
 }
+.mbody {
+    margin-top:220px;
+}
+
+img {
+    border:0;
+    border-radius:5px;
+}
+
+.col-md-4 {
+    margin-bottom:20px;
+}
+
+.col-md-4 img {
+    width:100%;
+    background-color: #FFF;
+    border-radius: 5px;
+    /*box-shadow: 0 1px 3px rgba(0,0,0,0.18);*/
+    position: relative;
+}
+
