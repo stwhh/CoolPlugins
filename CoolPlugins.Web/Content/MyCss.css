@@ -1,9 +1,12 @@
 ﻿body {
+    padding-top:50px;
+    padding-bottom:30px;
 }
 
 .footer {
     height:30px;
     padding-left:30%;
+    margin-top:50px;
 }
 
 .footer li {
@@ -32,5 +35,26 @@ img {
     border-radius: 5px;
     /*box-shadow: 0 1px 3px rgba(0,0,0,0.18);*/
     position: relative;
+}
+.pagiStyle {
+    padding-left:15px;
+       
+}
+
+/*分页插件输入框*/
+.pagiStyle ul > li > input{
+	vertical-align: top;
+	-webkit-border-radius: 0;
+	-moz-border-radius: 0;
+	border-radius: 0;
+	height:auto;
+	*height: 20px;
+	margin-bottom:0px;
+	background-color: #fff;
+	border-left-width: 0;
+	width:50px;
+	float:left;
+	min-height: auto;
+	*min-height: 20px;
 }
 

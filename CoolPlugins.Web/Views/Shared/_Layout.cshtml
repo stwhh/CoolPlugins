@@ -50,22 +50,22 @@
 </nav>
 
 <div class="container-fluid mbody ">
-    <!--中间-->
+    <!--左侧-->
     <div class="col-lg-1 visible-lg">左侧</div>
     <!--中间-->
     <div class="col-lg-9 col-md-12 col-sm-12 ">
         @RenderBody()
+
     </div>
     <!--右侧-->
     <div class="col-lg-2 visible-lg">呵呵</div>
-
 </div>
 
 @Scripts.Render("~/bundles/jquery")
 @RenderSection("scripts", required: false)
 
 <!--底部-->
-<nav class="footer navbar-inverse navbar-fixed-bottom ">
+<nav class="footer navbar-inverse navbar-fixed-bottom">
     <div class="container-fluid">
         <ul class="list-inline">
             <li>备案号：</li>
