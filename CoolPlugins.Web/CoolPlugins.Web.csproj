@@ -122,12 +122,25 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Controllers\HomeController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="Content\BootStrap\css\bootstrap-theme.css" />
+    <Content Include="Content\BootStrap\css\bootstrap-theme.min.css" />
+    <Content Include="Content\BootStrap\css\bootstrap.css" />
+    <Content Include="Content\BootStrap\css\bootstrap.min.css" />
+    <Content Include="Content\BootStrap\fonts\glyphicons-halflings-regular.svg" />
+    <Content Include="Content\BootStrap\js\bootstrap.js" />
+    <Content Include="Content\BootStrap\js\bootstrap.min.js" />
+    <Content Include="Content\BootStrap\js\npm.js" />
+    <Content Include="Content\FontAwesome\css\font-awesome.css" />
+    <Content Include="Content\FontAwesome\css\font-awesome.min.css" />
+    <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.svg" />
+    <Content Include="Content\MyCss.css" />
     <Content Include="Content\themes\base\images\ui-bg_flat_0_aaaaaa_40x100.png" />
     <Content Include="Content\themes\base\images\ui-bg_flat_75_ffffff_40x100.png" />
     <Content Include="Content\themes\base\images\ui-bg_glass_55_fbf9ee_1x400.png" />
@@ -184,10 +197,49 @@
     <Content Include="Content\themes\base\minified\jquery.ui.theme.min.css" />
     <Content Include="Global.asax" />
     <Content Include="Content\Site.css" />
+    <Content Include="Content\BootStrap\css\bootstrap-theme.css.map" />
+    <Content Include="Content\BootStrap\css\bootstrap.css.map" />
+    <Content Include="Content\BootStrap\fonts\glyphicons-halflings-regular.eot" />
+    <Content Include="Content\BootStrap\fonts\glyphicons-halflings-regular.ttf" />
+    <Content Include="Content\BootStrap\fonts\glyphicons-halflings-regular.woff" />
+    <Content Include="Content\BootStrap\fonts\glyphicons-halflings-regular.woff2" />
+    <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.eot" />
+    <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.ttf" />
+    <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.woff" />
+    <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.woff2" />
+    <Content Include="Content\FontAwesome\fonts\FontAwesome.otf" />
+    <Content Include="Content\FontAwesome\less\animated.less" />
+    <Content Include="Content\FontAwesome\less\bordered-pulled.less" />
+    <Content Include="Content\FontAwesome\less\core.less" />
+    <Content Include="Content\FontAwesome\less\fixed-width.less" />
+    <Content Include="Content\FontAwesome\less\font-awesome.less" />
+    <Content Include="Content\FontAwesome\less\icons.less" />
+    <Content Include="Content\FontAwesome\less\larger.less" />
+    <Content Include="Content\FontAwesome\less\list.less" />
+    <Content Include="Content\FontAwesome\less\mixins.less" />
+    <Content Include="Content\FontAwesome\less\path.less" />
+    <Content Include="Content\FontAwesome\less\rotated-flipped.less" />
+    <Content Include="Content\FontAwesome\less\stacked.less" />
+    <Content Include="Content\FontAwesome\less\variables.less" />
+    <Content Include="Content\FontAwesome\scss\font-awesome.scss" />
+    <Content Include="Content\FontAwesome\scss\_animated.scss" />
+    <Content Include="Content\FontAwesome\scss\_bordered-pulled.scss" />
+    <Content Include="Content\FontAwesome\scss\_core.scss" />
+    <Content Include="Content\FontAwesome\scss\_fixed-width.scss" />
+    <Content Include="Content\FontAwesome\scss\_icons.scss" />
+    <Content Include="Content\FontAwesome\scss\_larger.scss" />
+    <Content Include="Content\FontAwesome\scss\_list.scss" />
+    <Content Include="Content\FontAwesome\scss\_mixins.scss" />
+    <Content Include="Content\FontAwesome\scss\_path.scss" />
+    <Content Include="Content\FontAwesome\scss\_rotated-flipped.scss" />
+    <Content Include="Content\FontAwesome\scss\_stacked.scss" />
+    <Content Include="Content\FontAwesome\scss\_variables.scss" />
     <None Include="Scripts\jquery-1.7.1.intellisense.js" />
     <Content Include="Scripts\jquery-1.7.1.js" />
     <Content Include="Scripts\jquery-1.7.1.min.js" />
     <None Include="Scripts\jquery.validate-vsdoc.js" />
+    <Content Include="Scripts\jquery-2.1.3.js" />
+    <Content Include="Scripts\jquery-2.1.3.min.js" />
     <Content Include="Scripts\jquery-ui-1.8.20.js" />
     <Content Include="Scripts\jquery-ui-1.8.20.min.js" />
     <Content Include="Scripts\jquery.unobtrusive-ajax.js" />
@@ -211,10 +263,11 @@
     <Content Include="Views\_ViewStart.cshtml" />
     <Content Include="Views\Shared\Error.cshtml" />
     <Content Include="Views\Shared\_Layout.cshtml" />
+    <Content Include="Views\Home\Index.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Controllers\" />
+    <Folder Include="Content\Images\" />
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
