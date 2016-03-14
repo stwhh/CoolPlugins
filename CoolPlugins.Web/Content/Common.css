@@ -1,0 +1,107 @@
+﻿body {
+}
+
+/*margin 通用样式*/
+.mgtop10 {
+    margin-top:10px;
+}
+
+.mgtop15 {
+    margin-top:15px;
+}
+
+.mgtop20 {
+    margin-top:20px;
+}
+
+
+.mgbottom10 {
+    margin-bottom:10px;
+}
+
+.mgbottom15 {
+    margin-bottom:15px;
+}
+
+.mgbottom20 {
+    margin-bottom:20px;
+}
+
+
+.mgleft10 {
+    margin-left:10px;
+}
+
+.mgleft15 {
+    margin-left:15px;
+}
+
+.mgleft20 {
+    margin-left:20px;
+}
+
+
+.mgright10 {
+    margin-right:10px;
+}
+
+.mgright15 {
+    margin-right:15px;
+}
+
+.mgright20 {
+    margin-right:20px;
+}
+
+/*padding 通用样式*/
+
+.patop10 {
+    padding-top:10px;
+}
+
+.patop15 {
+    padding-top:15px;
+}
+
+.patop20 {
+    padding-top:20px;
+}
+
+
+.pabottom10 {
+    padding-bottom:10px;
+}
+
+.pabottom15 {
+    padding-bottom:15px;
+}
+
+.pabottom20 {
+    padding-bottom:20px;
+}
+
+
+.paleft10 {
+    padding-left:10px;
+}
+
+.paleft15 {
+    padding-left:15px;
+}
+
+.paleft20 {
+    padding-left:20px;
+}
+
+
+.paright10 {
+    padding-right:10px;
+}
+
+.paright15 {
+    padding-right:15px;
+}
+
+.paright20 {
+    padding-right:20px;
+}

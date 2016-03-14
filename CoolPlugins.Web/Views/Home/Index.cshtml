@@ -2,6 +2,35 @@
     ViewBag.Title = "首页";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+@section modalLayer{
+<!-- Modal登录注册模态框 -->
+<div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+          <h3 class="modal-title" id="myModalLabel"><strong>登 录</strong></h3>
+      </div>
+      <div class="modal-body">
+          <div class="input-group input-group-lg">
+              <div class="input-group-addon"><i class="fa fa-envelope-o fa-fw"></i></div>
+              <input type="text" class="form-control" id="" placeholder="邮箱">
+          </div>
+          <div class="input-group input-group-lg mgtop20">
+              <div class="input-group-addon"><i class="fa fa-key fa-fw"></i></div>
+              <input type="password" class="form-control" id="" placeholder="密码">
+              <div class="input-group-btn"><button class="btn btn-success" type="submit">确定</button></div>
+        </div>
+      </div>
+        <div class="modal-footer patop20 pabottom20 mgright10">
+            <a href="#" class="mgright20">忘记密码？</a>
+            <a href="#" class="">注册</a>
+        </div>
+        
+    </div>
+  </div>
+</div>
+}
 
 <div class="row">
     <div class="col-lg-4 col-md-4 col-sm-6">
@@ -48,9 +77,7 @@
 
 <!--分页-->
 <div class="row">
-    <form class="form-inline">
-        <div class="form-group">
-        <nav class="pagiStyle">
+    <nav class="pagiStyle">
             <ul class="pagination pagination-lg">
                 <li><a href="#">首页</a></li>
                 <li>
@@ -83,8 +110,6 @@
                 <li><a href="#">末页</a></li>
             </ul>
       </nav>
-      </div>
-    </form>
 </div>
 
    
