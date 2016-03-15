@@ -58,3 +58,46 @@ img {
 	*min-height: 20px;
 }
 
+
+/*登录提示*/
+.loginTips {
+    background-color: rgb(255, 223, 223);
+}
+
+
+/*输入框抖动效果*/
+.loginShake {
+    -webkit-animation: loginShake 0.5s .2s ease both;
+    -moz-animation: loginShake 0.5s .2s ease both;
+}
+
+@-webkit-keyframes loginShake {
+    0%,100% {
+        -webkit-transform: translateX(0);
+    }
+
+    10%,30%,50%,70%, 90% {
+        -webkit-transform: translateX(-5px);
+    }
+
+    20%,40%,60%,80% {
+        -webkit-transform: translateX(5px);
+    }
+}
+
+@-moz-keyframes loginShake {
+    0%,100% {
+        -moz-transform: translateX(0);
+    }
+
+    10%,30%,50%,70%, 90% {
+        -moz-transform: translateX(-5px);
+    }
+
+    20%,40%,60%,80% {
+        -moz-transform: translateX(5px);
+    }
+}
+
+
+

@@ -137,6 +137,7 @@
     <Content Include="Content\BootStrap\js\bootstrap.js" />
     <Content Include="Content\BootStrap\js\bootstrap.min.js" />
     <Content Include="Content\BootStrap\js\npm.js" />
+    <Content Include="Content\Common.css" />
     <Content Include="Content\FontAwesome\css\font-awesome.css" />
     <Content Include="Content\FontAwesome\css\font-awesome.min.css" />
     <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.svg" />
