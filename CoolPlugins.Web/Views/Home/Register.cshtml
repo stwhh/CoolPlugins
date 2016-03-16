@@ -1,0 +1,34 @@
+﻿@{
+    ViewBag.Title = "注册";
+    Layout = "~/Views/Shared/_LayoutForNull.cshtml";
+}
+
+<div class="center-block register">
+    <div class="modal-body">
+        <div class="input-group input-group-lg">
+            <div class="input-group-addon"><i class="fa fa-envelope-o fa-fw"></i>
+            </div>
+            <input type="text" class="form-control" id="email" placeholder="请输入邮箱">
+            <div class="input-group-btn"><button class="btn btn-success" type="submit" onclick="Login()">获取验证码</button>
+            </div>
+        </div>
+        <div class="input-group input-group-lg mgtop20">
+            <div class="input-group-addon"><i class="fa fa-qrcode fa-fw"></i>
+            </div>
+            <input type="password" class="form-control" id="" placeholder="验证码">
+        </div>
+        <div class="input-group input-group-lg mgtop20">
+            <div class="input-group-addon"><i class="fa fa-user fa-fw"></i>
+            </div>
+            <input type="password" class="form-control" id="" placeholder="用户名">
+        </div>
+        <div class="input-group input-group-lg mgtop20">
+            <div class="input-group-addon"><i class="fa fa-key fa-fw"></i>
+            </div>
+            <input type="password" class="form-control" id="password" placeholder="密码">
+            <div class="input-group-btn"><button class="btn btn-success" type="submit" onclick="Login()">注册</button>
+
+            </div>
+        </div>
+    </div>
+</div>
