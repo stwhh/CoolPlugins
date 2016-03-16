@@ -23,8 +23,8 @@
         </div>
       </div>
         <div class="modal-footer patop20 pabottom20 mgright10">
-            <a href="#" class="mgright20">忘记密码？</a>
-            <a href="#" class="">注册</a>
+            <a href="Home/ForgetPassword" class="mgright20">忘记密码？</a>
+            <a href="Home/Register" class="">注册</a>
         </div>
         
     </div>
@@ -32,7 +32,13 @@
 </div>
 }
 
-<div class="row">
+<!--左侧部分-->
+@section leftPart{
+    <div class="col-lg-1 visible-lg">左侧</div>
+}
+
+<!--主体-->
+<div class="row">    
     <div class="col-lg-4 col-md-4 col-sm-6">
         <a href="http://www.jq22.com/jquery-info6212" target="_blank">
             <img src="http://assets.jq22.com/plugin/2016-03-10-23-03-26.png">
@@ -48,7 +54,7 @@
             <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
         </a>
     </div>
-     <div class="col-lg-4 col-md-4 col-sm-6">
+    <div class="col-lg-4 col-md-4 col-sm-6">
         <a href="http://www.jq22.com/jquery-info6212" target="_blank">
             <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
         </a>
@@ -74,6 +80,19 @@
         </a>
     </div>
 </div>
+
+<!--右侧部分-->
+@section rightPart{
+    <div class="col-lg-2 visible-lg">
+        <ul class="list-group">
+           <a href="#" class="list-group-item"><i class="fa fa-calendar">&nbsp; 最新发布</i></a>
+           <a href="#" class="list-group-item"><i class="fa fa-star">&nbsp; 最多收藏</i></a>
+           <a href="#" class="list-group-item"><i class="fa fa-comments">&nbsp; 最多评价</i></a>
+           <a href="#" class="list-group-item"><i class="fa fa-arrow-circle-o-down">&nbsp; 最多下载</i></a>
+           <a href="#" class="list-group-item"><i class="fa fa-leaf"></i>&nbsp; 免费下载</a>
+        </ul>
+    </div>
+}
 
 <!--分页-->
 <div class="row">
