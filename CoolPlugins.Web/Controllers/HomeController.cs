@@ -26,10 +26,12 @@ namespace CoolPlugins.Web.Controllers
             return View();
         }
 
+        //忘记密码
         public ActionResult ForgetPassword()
         {
             return View();
         }
+
 
     }
 }
