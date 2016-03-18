@@ -2,6 +2,10 @@
     ViewBag.Title = "首页";
     Layout = "~/Views/Shared/_Layout.cshtml";
 }
+<link href="~/Content/CategoryNav/CategoryNav.css" rel="stylesheet" />
+<link href="~/Content/LunBo/lunbo.css" rel="stylesheet" />
+<script src="~/Content/LunBo/lunbo.js"></script>
+
 @section modalLayer{
 <!-- Modal登录注册模态框 -->
 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-labelledby="myModalLabel">
@@ -32,65 +36,141 @@
 </div>
 }
 
+<!--左侧分类导航-->
+@section nav{
+    <div class="nav-wrap mgleft15">
+        <div class="category-list_box">
+        <ul class="category-nav-sort">
+            <li>
+                <h3><a href="#">前后端模版</a>
+                </h3>
+                <a href="#">前端UI</a>
+                <a href="#">后端</a>
+                <a href="#">其他模板</a>
+                <a href="#">你猜</a>
+                <a href="#">jquery</a>
+            </li>
+            <li>
+                <h3><a href="#">UI</a>
+                </h3>
+                <a href="#">输入</a>
+                <a href="#">界面UI</a>
+                <a href="#">弹窗</a>
+                <a href="#">前端UI</a>
+                <a href="#">后端</a>
+            </li>
+            <li>
+                <h3><a href="#">前后端模版</a>
+                </h3>
+                <a href="#">前端</a>
+                <a href="#">后端</a>
+                <a href="#">其他</a>
+                <a href="#">前端UI</a>
+                <a href="#">后端</a>
+            </li>
+            <li>
+                <h3><a href="#">前后端模版</a>
+                </h3>
+                <a href="#">前端</a>
+                <a href="#">后端</a>
+                <a href="#">其他</a>
+                <a href="#">前端UI</a>
+                <a href="#">后端</a>
+            </li>
+            <li>
+                <h3><a href="#">前后端模版</a>
+                </h3>
+                <a href="#">前端</a>
+                <a href="#">后端</a>
+                <a href="#">其他</a>
+                <a href="#">前端UI</a>
+                <a href="#">后端</a>
+            </li>
+        </ul>
+    </div>
+    </div>
+}
+
+<!--左侧轮播图片-->
+@section lunBo{
+    <div class="out">
+	<ul class="img">
+		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/1.jpg" alt=""></a></li>
+		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/2.jpg" alt=""></a></li>
+		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/3.jpg" alt=""></a></li>
+		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/4.jpg" alt=""></a></li>
+		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/5.jpg" alt=""></a></li>
+		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/6.jpg" alt=""></a></li>
+	</ul>
+	<ul class="num">
+		<!--底部数字栏-->
+	</ul>
+	<div class="left btn"><</div>
+	<div class="right btn">></div>
+</div>
+}
+<!--右侧快速选择-->
+@section fastCategory{
+    <ul class="list-group mgtop10">
+        <a href="#" class="list-group-item"><i class="fa fa-calendar">&nbsp; 最新发布</i></a>
+        <a href="#" class="list-group-item"><i class="fa fa-star">&nbsp; 最多收藏</i></a>
+        <a href="#" class="list-group-item"><i class="fa fa-comments">&nbsp; 最多评价</i></a>
+        <a href="#" class="list-group-item"><i class="fa fa-arrow-circle-o-down">&nbsp; 最多下载</i></a>
+        <a href="#" class="list-group-item"><i class="fa fa-leaf"></i>&nbsp; 免费下载</a>
+    </ul>
+}
+
 <!--左侧部分-->
 @section leftPart{
-    <div class="col-lg-1 visible-lg">左侧</div>
+    <div class="col-lg-1 visible-lg"></div>
 }
 
 <!--主体-->
-<div class="row">    
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-10-23-03-26.png">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
-    <div class="col-lg-4 col-md-4 col-sm-6">
-        <a href="http://www.jq22.com/jquery-info6212" target="_blank">
-            <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
-        </a>
-    </div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-10-23-03-26.png">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
+</div>
+<div class="col-lg-4 col-md-4 col-sm-6 col-xs-12">
+    <a href="http://www.jq22.com/jquery-info6212" target="_blank">
+        <img src="http://assets.jq22.com/plugin/2016-03-09-14-03-25.jpg">
+    </a>
 </div>
 
-<!--右侧部分-->
-@section rightPart{
+@section rightPart
+{
     <div class="col-lg-2 visible-lg">
-        <ul class="list-group">
-           <a href="#" class="list-group-item"><i class="fa fa-calendar">&nbsp; 最新发布</i></a>
-           <a href="#" class="list-group-item"><i class="fa fa-star">&nbsp; 最多收藏</i></a>
-           <a href="#" class="list-group-item"><i class="fa fa-comments">&nbsp; 最多评价</i></a>
-           <a href="#" class="list-group-item"><i class="fa fa-arrow-circle-o-down">&nbsp; 最多下载</i></a>
-           <a href="#" class="list-group-item"><i class="fa fa-leaf"></i>&nbsp; 免费下载</a>
-        </ul>
+        @*先空着*@
     </div>
 }
 

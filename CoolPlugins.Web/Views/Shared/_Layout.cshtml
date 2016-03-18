@@ -21,7 +21,7 @@
 
 </head>
 <body>
-@RenderSection("modalLayer",required:false); 
+@RenderSection("modalLayer",required:false)
 <!--顶部导航栏-->
 <nav class="navbar navbar-inverse navbar-fixed-top ">
     <div class="container-fluid">
@@ -51,15 +51,40 @@
     </div>
 </nav>
 
-<div class="container-fluid mbody ">
-    <!--左侧-->
-    @RenderSection("leftPart",required:false)
-    <!--中间-->
-    <div class="col-lg-9 col-md-12 col-sm-12 ">
-        @RenderBody()
+<div class="container-fluid ">
+    <div class="row">
+        <div class="col-lg-1 visible-lg">
+            <!--左侧空着，暂时不用-->
+            @RenderSection("nouse", required: false)
+        </div>
+
+        <div class="col-lg-3 col-md-4 hidden-sm hidden-xs">
+            <!--左侧导航栏-->
+            @RenderSection("nav", required: false)
+        </div>
+
+        <div class="col-lg-6 col-md-8 hidden-sm hidden-xs">
+            <!--图片轮播-->
+            @RenderSection("lunBo", required: false)
+        </div>
+
+        <div class="col-lg-2 visible-lg paleft0">
+            <!--右侧快速选择-->
+            @RenderSection("fastCategory", required: false)
+        </div>
     </div>
-    <!--右侧-->
-    @RenderSection("rightPart",required:false)
+    <div class="row">
+        <!--左侧-->
+        @RenderSection("leftPart", required: false)
+
+        <!--中间-->
+        <div class="col-lg-9 col-md-12 col-sm-12 ">
+            @RenderBody()
+        </div>
+
+        <!--右侧空着 暂时不用-->
+        @RenderSection("rightPart", required: false)
+    </div>
 </div>
 
 @Scripts.Render("~/bundles/jquery")
