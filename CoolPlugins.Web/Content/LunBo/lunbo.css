@@ -1,0 +1,71 @@
+﻿body {
+}
+
+ul {
+    margin:0;padding: 0;
+    list-style: none; /*-webkit-padding-start: 40px;*/
+}  
+.out {
+	position: relative;
+	width: 625px; /*轮播框架宽度*/
+	height: 350px;  /*轮播框架高度*/
+	margin-top:10px;
+    margin-left:5px; /*为了跟下面图片对齐*/
+}
+.out .img li {
+	position: absolute; 
+	top: 0; 
+	left: 0;
+	display: none;
+}
+.out .num {
+	position: absolute; 
+	bottom: 10px;
+	left: 0;
+	font-size: 0;
+	width: 100%;
+	text-align: center;
+}
+.out .num li {
+	width: 20px;
+	height: 20px;
+	display: inline-block;
+	font-size: 16px;
+	background-color: #666;
+	color: #fff;
+	text-align: center;
+	line-height: 20px;
+	border-radius: 50%;
+	margin: 0 3px;
+	cursor: pointer;
+}
+.out .num li.active { background-color:#a00;}
+.out .btn {
+	position: absolute ;
+	top: 55%;
+	width: 30px;
+	height: 60px;
+	margin-top: -55px;
+	background: rgba(0,0,0,.5);
+	color: #fff;
+	text-align: center;
+	line-height: 60px;
+	font-size: 40px;
+	display: none;
+    padding:0;
+}
+.out:hover .btn{ 
+	display: block;
+	cursor: pointer;
+}
+.out .left { left: 0;}
+.out .right { right: 0;}
+
+ul li img {
+    border:0;
+    border-radius:5px;
+}
+
+.out ul {
+    margin-bottom:0;
+}

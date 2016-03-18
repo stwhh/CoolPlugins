@@ -53,7 +53,25 @@
 
 <div class="container-fluid ">
     <div class="row">
-        测试
+        <div class="col-lg-1 visible-lg">
+            <!--左侧空着，暂时不用-->
+            @RenderSection("nouse", required: false)
+        </div>
+
+        <div class="col-lg-3 col-md-4 hidden-sm hidden-xs">
+            <!--左侧导航栏-->
+            @RenderSection("nav", required: false)
+        </div>
+
+        <div class="col-lg-6 col-md-8 hidden-sm hidden-xs">
+            <!--图片轮播-->
+            @RenderSection("lunBo", required: false)
+        </div>
+
+        <div class="col-lg-2 visible-lg paleft0">
+            <!--右侧快速选择-->
+            @RenderSection("fastCategory", required: false)
+        </div>
     </div>
     <div class="row">
         <!--左侧-->
@@ -64,7 +82,7 @@
             @RenderBody()
         </div>
 
-        <!--右侧-->
+        <!--右侧空着 暂时不用-->
         @RenderSection("rightPart", required: false)
     </div>
 </div>
