@@ -36,10 +36,16 @@
 </div>
 }
 
+@section search{
+    <div class="input-group input-group-lg search">
+        <input type="text" class="form-control" id="search" placeholder="请输入..">
+        <div class="input-group-btn"><button class="btn btn-success" type="submit" onclick="Login()">搜索</button>
+        </div>
+    </div>
+}
 <!--左侧分类导航-->
 @section nav{
-    <div class="nav-wrap mgleft15">
-        <div class="category-list_box">
+<div class="category-list_box">
         <ul class="category-nav-sort">
             <li>
                 <h3><a href="#">前后端模版</a>
@@ -48,7 +54,6 @@
                 <a href="#">后端</a>
                 <a href="#">其他模板</a>
                 <a href="#">你猜</a>
-                <a href="#">jquery</a>
             </li>
             <li>
                 <h3><a href="#">UI</a>
@@ -88,19 +93,18 @@
             </li>
         </ul>
     </div>
-    </div>
 }
 
-<!--左侧轮播图片-->
+<!--轮播图片-->
 @section lunBo{
     <div class="out">
 	<ul class="img">
-		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/1.jpg" alt=""></a></li>
-		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/2.jpg" alt=""></a></li>
-		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/3.jpg" alt=""></a></li>
-		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/4.jpg" alt=""></a></li>
-		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/5.jpg" alt=""></a></li>
-		<li><a href="#"><img width="625" height="350" src="/Content/LunBo/img/6.jpg" alt=""></a></li>
+		<li><a href="#"><img width="100%" height="350" src="/Content/LunBo/img/1.jpg" alt=""></a></li>
+		<li><a href="#"><img width="100%" height="350" src="/Content/LunBo/img/2.jpg" alt=""></a></li>
+		<li><a href="#"><img width="100%" height="350" src="/Content/LunBo/img/3.jpg" alt=""></a></li>
+		<li><a href="#"><img width="100%" height="350" src="/Content/LunBo/img/4.jpg" alt=""></a></li>
+		<li><a href="#"><img width="100%" height="350" src="/Content/LunBo/img/5.jpg" alt=""></a></li>
+		<li><a href="#"><img width="100%" height="350" src="/Content/LunBo/img/6.jpg" alt=""></a></li>
 	</ul>
 	<ul class="num">
 		<!--底部数字栏-->
@@ -118,11 +122,6 @@
         <a href="#" class="list-group-item"><i class="fa fa-arrow-circle-o-down">&nbsp; 最多下载</i></a>
         <a href="#" class="list-group-item"><i class="fa fa-leaf"></i>&nbsp; 免费下载</a>
     </ul>
-}
-
-<!--左侧部分-->
-@section leftPart{
-    <div class="col-lg-1 visible-lg"></div>
 }
 
 <!--主体-->
@@ -167,49 +166,43 @@
     </a>
 </div>
 
-@section rightPart
-{
-    <div class="col-lg-2 visible-lg">
-        @*先空着*@
-    </div>
-}
-
 <!--分页-->
-<div class="row">
-    <nav class="pagiStyle">
-            <ul class="pagination pagination-lg">
-                <li><a href="#">首页</a></li>
-                <li>
-                    <a href="#" aria-label="Previous">
-                        @*<span aria-hidden="true">&laquo;</span>*@
-                        <span aria-hidden="true">&laquo;上页</span>
-                    </a>
-                </li>
-                <li><a href="#">1</a></li>
-                <li class="active"><a href="#">2</a></li>
-                <li><a href="#">3</a></li>
-                <li><a href="#">4</a></li>
-                <li><a href="#">5</a></li>
-                <li><a href="#">6</a></li>
-                <li><a href="#">7</a></li>
-                <li><a href="#">8</a></li>
-                <li><a href="#">9</a></li>
-                <li><a href="#">10</a></li>
-                <li><a href="#">...100</a></li>
-                <li>
-                    <input type="text" class="form-control input-lg" placeholder="" style="width: 50px;">
-                    <span>/100</span>
-                </li>
-                <li>
-                    <a href="#" aria-label="Next">
-                        @*<span aria-hidden="true">&raquo;</span>*@
-                        <span aria-hidden="true">下页&raquo;</span>
-                    </a>
-                </li>
-                <li><a href="#">末页</a></li>
-            </ul>
-      </nav>
-</div>
+@section Pagination{
+<nav class="pagiStyle">
+    <ul class="pagination pagination-lg ">
+            <li><a href="#">首页</a></li>
+            <li>
+                <a href="#" aria-label="Previous">
+                    @*<span aria-hidden="true">&laquo;</span>*@
+                    <span aria-hidden="true">&laquo;上页</span>
+                </a>
+            </li>
+            <li><a href="#">1</a></li>
+            <li class="active"><a href="#">2</a></li>
+            <li><a href="#">3</a></li>
+            <li><a href="#">4</a></li>
+            <li><a href="#">5</a></li>
+            <li><a href="#">6</a></li>
+            <li><a href="#">7</a></li>
+            <li><a href="#">8</a></li>
+            <li><a href="#">9</a></li>
+            <li><a href="#">10</a></li>
+            <li><a href="#">...100</a></li>
+            <li>
+                <input type="text" class="form-control input-lg" placeholder="" style="width: 50px;">
+                <span>/100</span>
+            </li>
+            <li>
+                <a href="#" aria-label="Next">
+                    @*<span aria-hidden="true">&raquo;</span>*@
+                    <span aria-hidden="true">下页&raquo;</span>
+                </a>
+            </li>
+            <li><a href="#">末页</a></li>
+        </ul>
+</nav>
+    
+}
 
 <script type="text/javascript">
     $("#email").removeClass("loginTips");

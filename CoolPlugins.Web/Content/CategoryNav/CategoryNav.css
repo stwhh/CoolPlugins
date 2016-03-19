@@ -7,18 +7,21 @@
 	border-right: 1px solid #dcdcdc;
 	border-bottom: 1px solid #dcdcdc;
 	background: #FFF;
-	overflow: hidden
+    overflow: hidden;
+    /*width: 300px;*/  /*不能指定宽度，否则屏幕很大的话分类导航栏依旧很小，不会响应式*/
+    margin-top: 10px;
+    /*margin-left:15px;*/
 }
 
 .nav-wrap {
-	width: 300px;  /*宽度*/
+	  /*宽度*/
 	/*position: absolute;*/
-	margin-top: 10px;
+	
 	left: 0;
 }
 
 .category-nav-sort {
-	border: 1px solid #dcdcdc;
+	/*border: 1px solid #dcdcdc;*/
 	border-top: 0;
 	border-bottom: 0;
     background-color: #fff;
