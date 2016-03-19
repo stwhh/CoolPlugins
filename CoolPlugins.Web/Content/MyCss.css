@@ -3,6 +3,11 @@
     padding-bottom:30px;
 }
 
+.col-lg-4 {
+     padding-left: 0; 
+}
+
+
 .footer {
     height:30px;
     padding-left:30%;
@@ -101,4 +106,10 @@ img {
 
 .register {
     width: 500px;
+}
+
+/*搜索栏*/
+.search {
+    width:550px;
+    margin:15px auto 10px;
 }

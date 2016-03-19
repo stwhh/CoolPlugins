@@ -7,11 +7,15 @@ ul {
 }  
 .out {
 	position: relative;
-	width: 625px; /*轮播框架宽度*/
+	width: 632px; /*轮播框架宽度*/
 	height: 350px;  /*轮播框架高度*/
 	margin-top:10px;
     margin-left:5px; /*为了跟下面图片对齐*/
 }
+/*.out ul li img {
+    width:100%;
+    max-width:600px;
+}*/
 .out .img li {
 	position: absolute; 
 	top: 0; 
