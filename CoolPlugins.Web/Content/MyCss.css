@@ -21,9 +21,6 @@
     padding-left: 10px;
     padding-right: 10px;
 }
-.mbody {
-    margin-top:220px;
-}
 
 img {
     border:0;
@@ -106,6 +103,7 @@ img {
 
 .register {
     width: 500px;
+    margin-top:60px;
 }
 
 /*搜索栏*/
