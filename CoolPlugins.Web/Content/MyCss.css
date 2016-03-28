@@ -111,3 +111,34 @@ img {
     width:550px;
     margin:15px auto 10px;
 }
+
+.detail {
+    margin-top:15px;
+    background: #EDEDED;
+}
+
+.detailHeader {
+    padding:20px 15px 0;
+}
+
+.detailHeader h1 {
+    font-size:28px;
+    margin-top:0;
+}
+
+.detailHeader p {
+    color:#696969;
+}
+
+.detailTitle {
+    padding:0 0 10px;
+}
+
+.detailLove span {
+    border-right: 1px solid #ffffff; 
+    display: inline-block; 
+    height: 20px; 
+    line-height: 20px; 
+    margin-right: 10px; 
+    padding-right: 10px;
+}

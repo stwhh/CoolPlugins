@@ -45,13 +45,13 @@ namespace CoolPlugins.Web
                     switch (httpError.GetHttpCode())
                     {
                         case 403:
-                            HttpContext.Current.Response.Redirect("/Home/ErrorPage");
+                            HttpContext.Current.Response.Redirect("/home/errorPage");
                             break;
                         case 404:
-                            HttpContext.Current.Response.Redirect("/Home/ErrorPage");
+                            HttpContext.Current.Response.Redirect("/home/errorPage");
                             break;
                         case 500:
-                            HttpContext.Current.Response.Redirect("/Home/ErrorPage");
+                            HttpContext.Current.Response.Redirect("/home/errorPage");
                             break;
                     }
                 }
