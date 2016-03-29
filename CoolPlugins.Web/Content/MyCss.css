@@ -113,12 +113,14 @@ img {
 }
 
 .detail {
-    margin-top:15px;
-    background: #EDEDED;
+    /*background: #EDEDED;*/
+    margin-top:20px;
+    margin-bottom:50px;
 }
 
 .detailHeader {
     padding:20px 15px 0;
+    background: #EDEDED;
 }
 
 .detailHeader h1 {
@@ -141,4 +143,47 @@ img {
     line-height: 20px; 
     margin-right: 10px; 
     padding-right: 10px;
+}
+
+.detailContent {
+     background-color: #f3f3f3; 
+     padding-top: 30px; 
+     padding-right: 5%; 
+     padding-left: 5%; 
+     padding-bottom: 30px; 
+}
+
+.detailImg {
+     max-width:100%;
+     border-radius: 10px;
+     width: 100%; 
+     margin-bottom: 20px; 
+     text-align: center; 
+}
+
+.author h6 {
+    margin-top: 0;
+    color: #A7A7A7; 
+}
+
+.author img{
+     display: block; 
+     margin-right: 10px; 
+     width: 50px; 
+     height: 50px; 
+     border-radius: 50px; 
+     float:left 
+}
+
+.author h4{ 
+    font-size: 14px; 
+    padding-top: 0; 
+    padding-top: 12px; 
+}
+
+.btnAuthor {
+    color: #333; 
+    background-color: #fff; 
+    border-color: #ccc; 
+    width: 100%;
 }

@@ -143,6 +143,7 @@
     <Content Include="Content\FontAwesome\css\font-awesome.css" />
     <Content Include="Content\FontAwesome\css\font-awesome.min.css" />
     <Content Include="Content\FontAwesome\fonts\fontawesome-webfont.svg" />
+    <Content Include="Content\Images\user1.png" />
     <Content Include="Content\LunBo\img\1.jpg" />
     <Content Include="Content\LunBo\img\2.jpg" />
     <Content Include="Content\LunBo\img\3.jpg" />
@@ -284,7 +285,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Content\Images\" />
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
