@@ -120,7 +120,7 @@ img {
 
 .detailHeader {
     padding:20px 15px 0;
-    background: #EDEDED;
+    background: #F9F9F9;
 }
 
 .detailHeader h1 {
@@ -146,11 +146,12 @@ img {
 }
 
 .detailContent {
-     background-color: #f3f3f3; 
+     /*background-color: #ECEFF4;*/
+     border: 1px solid #EDEDED;
      padding-top: 30px; 
      padding-right: 5%; 
      padding-left: 5%; 
-     padding-bottom: 30px; 
+     padding-bottom: 15px; 
 }
 
 .detailImg {
@@ -186,4 +187,19 @@ img {
     background-color: #fff; 
     border-color: #ccc; 
     width: 100%;
+}
+
+.viewOrDownLoad {
+    width: 100%; 
+    border-radius: 4px; 
+    text-align: center
+
+}
+
+.viewOrDownLoad a {
+    width: 20%; 
+    margin-left: 1%; 
+    margin-right: 1%; 
+    font-size: 1.5em; 
+    line-height: 40px; 
 }

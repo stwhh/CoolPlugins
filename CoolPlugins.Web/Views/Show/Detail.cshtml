@@ -5,18 +5,26 @@
 
 <div class="row detail">
     <div class="col-lg-10 col-md-12 col-sm-12">
-            <div class="detailHeader">
-                <h1 id="detailTitle">jquery轮播图片</h1>
-                <p>所属分类-图片插件</p>
-                <div class="detailLove">
-                    <span><i class="fa fa-eye"></i>  &nbsp;824 </span>
-                    <span><i class="fa fa-heart"></i>  &nbsp;824 </span>
-                    <span><i class="fa fa-comment"></i>  &nbsp;824 </span>
-                </div>
+        <div class="detailHeader">
+            <h1 id="detailTitle">jquery轮播图片</h1>
+            <p>所属分类-图片插件</p>
+            <div class="detailLove">
+                <span><i class="fa fa-eye"></i>  &nbsp;824 </span>
+                <span><i class="fa fa-heart"></i>  &nbsp;824 </span>
+                <span><i class="fa fa-comment"></i>  &nbsp;824 </span>
             </div>
-            <div class="detailContent">
-                <img class="detailImg" src="http://assets.jq22.com/plugin/2016-03-22-17-03-49.png"/>
+        </div>
+
+        <div class="detailContent">
+            <img class="detailImg" src="http://assets.jq22.com/plugin/2016-03-22-17-03-49.png"/>
+
+            <div class="viewOrDownLoad">
+                <a href="#" class="btn btn-success"><i class="fa fa-eye"></i>&nbsp;在线预览</a>
+                <a href="#" class="btn btn-danger"><i class="fa fa-cloud-download"></i>&nbsp;立即下载</a>
             </div>
+        </div>
+
+        
 
     </div>
 
@@ -43,3 +51,12 @@
 
 </div>
 
+<script>
+    $(".btnAuthor").hover(function() {
+        $(this).css({ "background-color": "#F5F5F5" });
+    }, function() {
+        $(this).css({ "background-color": "#fff" });
+    });
+        
+       
+</script>
