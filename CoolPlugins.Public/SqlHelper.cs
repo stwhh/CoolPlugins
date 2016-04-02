@@ -1,424 +1,2456 @@
-ï»¿using System;
-using System.Data;
-using System.Configuration;
+using System;
 using System.Collections;
+using System.Configuration;
+using System.Data;
 using System.Data.SqlClient;
-using System.Text.RegularExpressions;
+using System.Xml;
 
+namespace CoolPlugins.Public 
+{ 
+    /// <summary> 
+    /// SqlServerÊı¾İ·ÃÎÊ°ïÖúÀà 
+    /// </summary> 
+    public abstract class SqlHelper 
+    { 
+        #region Ë½ÓĞ¹¹Ôìº¯ÊıºÍ·½·¨
 
-namespace CoolPlugins.Public
-{
-    /// <summary>
-    /// æ•°æ®åº“çš„é€šç”¨è®¿é—®ä»£ç 
-    /// æ­¤ç±»ä¸ºæŠ½è±¡ç±»ï¼Œä¸å…è®¸å®ä¾‹åŒ–ï¼Œåœ¨åº”ç”¨æ—¶ç›´æ¥è°ƒç”¨å³å¯
-    /// </summary>
-    public abstract class SqlHelper
-    {
-        public SqlHelper()
-        {
+        private SqlHelper() { }
 
+        /// <summary> 
+        /// ½«SqlParameter²ÎÊıÊı×é(²ÎÊıÖµ)·ÖÅä¸øSqlCommandÃüÁî. 
+        /// Õâ¸ö·½·¨½«¸øÈÎºÎÒ»¸ö²ÎÊı·ÖÅäDBNull.Value; 
+        /// ¸Ã²Ù×÷½«×èÖ¹Ä¬ÈÏÖµµÄÊ¹ÓÃ. 
+        /// </summary> 
+        /// <param name="command">ÃüÁîÃû</param> 
+        /// <param name="commandParameters">SqlParametersÊı×é</param> 
+        private static void AttachParameters(SqlCommand command, SqlParameter[] commandParameters) 
+        { 
+            if (command == null) throw new ArgumentNullException("command"); 
+            if (commandParameters != null) 
+            { 
+                foreach (SqlParameter p in commandParameters) 
+                { 
+                    if (p != null) 
+                    { 
+                        // ¼ì²éÎ´·ÖÅäÖµµÄÊä³ö²ÎÊı,½«Æä·ÖÅäÒÔDBNull.Value. 
+                        if ((p.Direction == ParameterDirection.InputOutput || p.Direction == ParameterDirection.Input) && 
+                            (p.Value == null)) 
+                        { 
+                            p.Value = DBNull.Value; 
+                        } 
+                        command.Parameters.Add(p); 
+                    } 
+                } 
+            } 
         }
 
-        //è·å–æ•°æ®åº“è¿æ¥å­—ç¬¦ä¸²ï¼Œå…¶å±äºé™æ€å˜é‡ä¸”åªè¯»ï¼Œé¡¹ç›®ä¸­æ‰€æœ‰æ–‡æ¡£å¯ä»¥ç›´æ¥ä½¿ç”¨ï¼Œä½†ä¸èƒ½ä¿®æ”¹
-        public static readonly string ConnectionStringLocalTransaction =
-            ConfigurationManager.ConnectionStrings["connectionStrings"].ConnectionString;
-
-        //public static readonly string ConnectionStringLocalTransaction = ConfigurationManager.AppSettings["ConnectionString"].ToString();
-
-
-        // å“ˆå¸Œè¡¨ç”¨æ¥å­˜å‚¨ç¼“å­˜çš„å‚æ•°ä¿¡æ¯ï¼Œå“ˆå¸Œè¡¨å¯ä»¥å­˜å‚¨ä»»æ„ç±»å‹çš„å‚æ•°ã€‚
-        private static Hashtable parmCache = Hashtable.Synchronized(new Hashtable());
-
-        /// <summary>
-        ///æ‰§è¡Œä¸€ä¸ªä¸éœ€è¦è¿”å›å€¼çš„SqlCommandå‘½ä»¤ï¼Œé€šè¿‡æŒ‡å®šä¸“ç”¨çš„è¿æ¥å­—ç¬¦ä¸²ã€‚
-        /// ä½¿ç”¨å‚æ•°æ•°ç»„å½¢å¼æä¾›å‚æ•°åˆ—è¡¨ 
-        /// </summary>
-        /// <remarks>
-        /// ä½¿ç”¨ç¤ºä¾‹ï¼š
-        ///  int result = ExecuteNonQuery(connString, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24));
-        /// </remarks>
-        /// <param name="connectionString">ä¸€ä¸ªæœ‰æ•ˆçš„æ•°æ®åº“è¿æ¥å­—ç¬¦ä¸²</param>
-        /// <param name="commandType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="commandText">å­˜å‚¨è¿‡ç¨‹çš„åå­—æˆ–è€… T-SQL è¯­å¥</param>
-        /// <param name="commandParameters">ä»¥æ•°ç»„å½¢å¼æä¾›SqlCommandå‘½ä»¤ä¸­ç”¨åˆ°çš„å‚æ•°åˆ—è¡¨</param>
-        /// <returns>è¿”å›ä¸€ä¸ªæ•°å€¼è¡¨ç¤ºæ­¤SqlCommandå‘½ä»¤æ‰§è¡Œåå½±å“çš„è¡Œæ•°</returns>
-        public static int ExecuteNonQuery(string connectionString, CommandType cmdType, string cmdText,
-            params SqlParameter[] commandParameters)
-        {
-
-            SqlCommand cmd = new SqlCommand();
-
-            using (SqlConnection conn = new SqlConnection(connectionString))
-            {
-                //é€šè¿‡PrePareCommandæ–¹æ³•å°†å‚æ•°é€ä¸ªåŠ å…¥åˆ°SqlCommandçš„å‚æ•°é›†åˆä¸­
-                PrepareCommand(cmd, conn, null, cmdType, cmdText, commandParameters);
-                int val = cmd.ExecuteNonQuery();
-
-                //æ¸…ç©ºSqlCommandä¸­çš„å‚æ•°åˆ—è¡¨
-                cmd.Parameters.Clear();
-                return val;
+        /// <summary> 
+        /// ½«DataRowÀàĞÍµÄÁĞÖµ·ÖÅäµ½SqlParameter²ÎÊıÊı×é. 
+        /// </summary> 
+        /// <param name="commandParameters">Òª·ÖÅäÖµµÄSqlParameter²ÎÊıÊı×é</param> 
+        /// <param name="dataRow">½«Òª·ÖÅä¸ø´æ´¢¹ı³Ì²ÎÊıµÄDataRow</param> 
+        private static void AssignParameterValues(SqlParameter[] commandParameters, DataRow dataRow) 
+        { 
+            if ((commandParameters == null) || (dataRow == null)) 
+            { 
+                return; 
             }
+
+            int i = 0; 
+            // ÉèÖÃ²ÎÊıÖµ 
+            foreach (SqlParameter commandParameter in commandParameters) 
+            { 
+                // ´´½¨²ÎÊıÃû³Æ,Èç¹û²»´æÔÚ,Ö»Å×³öÒ»¸öÒì³£. 
+                if (commandParameter.ParameterName == null || 
+                    commandParameter.ParameterName.Length <= 1) 
+                    throw new Exception( 
+                        string.Format("ÇëÌá¹©²ÎÊı{0}Ò»¸öÓĞĞ§µÄÃû³Æ{1}.", i, commandParameter.ParameterName)); 
+                // ´ÓdataRowµÄ±íÖĞ»ñÈ¡Îª²ÎÊıÊı×éÖĞÊı×éÃû³ÆµÄÁĞµÄË÷Òı. 
+                // Èç¹û´æÔÚºÍ²ÎÊıÃû³ÆÏàÍ¬µÄÁĞ,Ôò½«ÁĞÖµ¸³¸øµ±Ç°Ãû³ÆµÄ²ÎÊı. 
+                if (dataRow.Table.Columns.IndexOf(commandParameter.ParameterName.Substring(1)) != -1) 
+                    commandParameter.Value = dataRow[commandParameter.ParameterName.Substring(1)]; 
+                i++; 
+            } 
         }
 
-        /// <summary>
-        ///æ‰§è¡Œä¸€æ¡ä¸è¿”å›ç»“æœçš„SqlCommandï¼Œé€šè¿‡ä¸€ä¸ªå·²ç»å­˜åœ¨çš„æ•°æ®åº“è¿æ¥ 
-        /// ä½¿ç”¨å‚æ•°æ•°ç»„æä¾›å‚æ•°
-        /// </summary>
-        /// <remarks>
-        /// ä½¿ç”¨ç¤ºä¾‹ï¼š  
-        ///  int result = ExecuteNonQuery(conn, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24));
-        /// </remarks>
-        /// <param name="conn">ä¸€ä¸ªç°æœ‰çš„æ•°æ®åº“è¿æ¥</param>
-        /// <param name="commandType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="commandText">å­˜å‚¨è¿‡ç¨‹çš„åå­—æˆ–è€… T-SQL è¯­å¥</param>
-        /// <param name="commandParameters">ä»¥æ•°ç»„å½¢å¼æä¾›SqlCommandå‘½ä»¤ä¸­ç”¨åˆ°çš„å‚æ•°åˆ—è¡¨</param>
-        /// <returns>è¿”å›ä¸€ä¸ªæ•°å€¼è¡¨ç¤ºæ­¤SqlCommandå‘½ä»¤æ‰§è¡Œåå½±å“çš„è¡Œæ•°</returns>
-        public static int ExecuteNonQuery(SqlConnection connection, CommandType cmdType, string cmdText,
-            params SqlParameter[] commandParameters)
-        {
+        /// <summary> 
+        /// ½«Ò»¸ö¶ÔÏóÊı×é·ÖÅä¸øSqlParameter²ÎÊıÊı×é. 
+        /// </summary> 
+        /// <param name="commandParameters">Òª·ÖÅäÖµµÄSqlParameter²ÎÊıÊı×é</param> 
+        /// <param name="parameterValues">½«Òª·ÖÅä¸ø´æ´¢¹ı³Ì²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        private static void AssignParameterValues(SqlParameter[] commandParameters, object[] parameterValues) 
+        { 
+            if ((commandParameters == null) || (parameterValues == null)) 
+            { 
+                return; 
+            }
 
-            SqlCommand cmd = new SqlCommand();
-            try
-            {
+            // È·±£¶ÔÏóÊı×é¸öÊıÓë²ÎÊı¸öÊıÆ¥Åä,Èç¹û²»Æ¥Åä,Å×³öÒ»¸öÒì³£. 
+            if (commandParameters.Length != parameterValues.Length) 
+            { 
+                throw new ArgumentException("²ÎÊıÖµ¸öÊıÓë²ÎÊı²»Æ¥Åä."); 
+            }
+
+            // ¸ø²ÎÊı¸³Öµ 
+            for (int i = 0, j = commandParameters.Length; i < j; i++) 
+            { 
+                // If the current array value derives from IDbDataParameter, then assign its Value property 
+                if (parameterValues[i] is IDbDataParameter) 
+                { 
+                    IDbDataParameter paramInstance = (IDbDataParameter)parameterValues[i]; 
+                    if (paramInstance.Value == null) 
+                    { 
+                        commandParameters[i].Value = DBNull.Value; 
+                    } 
+                    else 
+                    { 
+                        commandParameters[i].Value = paramInstance.Value; 
+                    } 
+                } 
+                else if (parameterValues[i] == null) 
+                { 
+                    commandParameters[i].Value = DBNull.Value; 
+                } 
+                else 
+                { 
+                    commandParameters[i].Value = parameterValues[i]; 
+                } 
+            } 
+        }
+
+        /// <summary> 
+        /// Ô¤´¦ÀíÓÃ»§Ìá¹©µÄÃüÁî,Êı¾İ¿âÁ¬½Ó/ÊÂÎñ/ÃüÁîÀàĞÍ/²ÎÊı 
+        /// </summary> 
+        /// <param name="command">Òª´¦ÀíµÄSqlCommand</param> 
+        /// <param name="connection">Êı¾İ¿âÁ¬½Ó</param> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÊÂÎñ»òÕßÊÇnullÖµ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾, ÆäËü.)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»ò¶¼T-SQLÃüÁîÎÄ±¾</param> 
+        /// <param name="commandParameters">ºÍÃüÁîÏà¹ØÁªµÄSqlParameter²ÎÊıÊı×é,Èç¹ûÃ»ÓĞ²ÎÊıÎª'null'</param> 
+        /// <param name="mustCloseConnection"><c>true</c> Èç¹ûÁ¬½ÓÊÇ´ò¿ªµÄ,ÔòÎªtrue,ÆäËüÇé¿öÏÂÎªfalse.</param> 
+        private static void PrepareCommand(SqlCommand command, SqlConnection connection, SqlTransaction transaction, CommandType commandType, string commandText, SqlParameter[] commandParameters, out bool mustCloseConnection) 
+        { 
+            if (command == null) throw new ArgumentNullException("command"); 
+            if (commandText == null || commandText.Length == 0) throw new ArgumentNullException("commandText");
+
+            // If the provided connection is not open, we will open it 
+            if (connection.State != ConnectionState.Open) 
+            { 
+                mustCloseConnection = true; 
+                connection.Open(); 
+            } 
+            else 
+            { 
+                mustCloseConnection = false; 
+            }
+
+            // ¸øÃüÁî·ÖÅäÒ»¸öÊı¾İ¿âÁ¬½Ó. 
+            command.Connection = connection;
+
+            // ÉèÖÃÃüÁîÎÄ±¾(´æ´¢¹ı³ÌÃû»òSQLÓï¾ä) 
+            command.CommandText = commandText;
+
+            // ·ÖÅäÊÂÎñ 
+            if (transaction != null) 
+            { 
+                if (transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+                command.Transaction = transaction; 
+            }
+
+            // ÉèÖÃÃüÁîÀàĞÍ. 
+            command.CommandType = commandType;
+
+            // ·ÖÅäÃüÁî²ÎÊı 
+            if (commandParameters != null) 
+            { 
+                AttachParameters(command, commandParameters); 
+            } 
+            return; 
+        }
+
+        #endregion Ë½ÓĞ¹¹Ôìº¯ÊıºÍ·½·¨½áÊø
+
+        #region Êı¾İ¿âÁ¬½Ó 
+        /// <summary> 
+        /// Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´® 
+        /// </summary> 
+        /// <returns></returns> 
+        public static string GetConnString() 
+        { 
+            return ConfigurationManager.ConnectionStrings["ConStr"].ConnectionString; 
+        } 
+
+        /// <summary> 
+        /// Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó 
+        /// </summary> 
+        /// <returns></returns> 
+        public static SqlConnection GetConnection() 
+        { 
+            SqlConnection connection = new SqlConnection(SqlHelper.GetConnString()); 
+            return connection; 
+        } 
+        #endregion
+
+        #region ExecuteNonQueryÃüÁî
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½Ó×Ö·û´®,ÀàĞÍµÄSqlCommand. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(connString, CommandType.StoredProcedure, "PublishOrders"); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾, ÆäËü.)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òSQLÓï¾ä</param> 
+        /// <returns>·µ»ØÃüÁîÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(string connectionString, CommandType commandType, string commandText) 
+        { 
+            return ExecuteNonQuery(connectionString, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½Ó×Ö·û´®,ÀàĞÍµÄSqlCommand.Èç¹ûÃ»ÓĞÌá¹©²ÎÊı,²»·µ»Ø½á¹û. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(connString, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾, ÆäËü.)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òSQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParameter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÃüÁîÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(string connectionString, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString");
+
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
                 connection.Open();
-                PrepareCommand(cmd, connection, null, cmdType, cmdText, commandParameters);
-                int val = cmd.ExecuteNonQuery();
-                cmd.Parameters.Clear();
-                return val;
-            }
-            catch
-            {
-                connection.Close();
-                throw;
-            }
-            //finally
-            //{
-            //    connection.Close();
-            //}
+
+                return ExecuteNonQuery(connection, commandType, commandText, commandParameters); 
+            } 
         }
 
-        /// <summary>
-        /// æ‰§è¡Œä¸€æ¡ä¸è¿”å›ç»“æœçš„SqlCommandï¼Œé€šè¿‡ä¸€ä¸ªå·²ç»å­˜åœ¨çš„æ•°æ®åº“äº‹ç‰©å¤„ç† 
-        /// ä½¿ç”¨å‚æ•°æ•°ç»„æä¾›å‚æ•°
-        /// </summary>
-        /// <remarks>
-        /// ä½¿ç”¨ç¤ºä¾‹ï¼š 
-        ///  int result = ExecuteNonQuery(trans, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24));
-        /// </remarks>
-        /// <param name="trans">ä¸€ä¸ªå­˜åœ¨çš„ sql äº‹ç‰©å¤„ç†</param>
-        /// <param name="commandType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="commandText">å­˜å‚¨è¿‡ç¨‹çš„åå­—æˆ–è€… T-SQL è¯­å¥</param>
-        /// <param name="commandParameters">ä»¥æ•°ç»„å½¢å¼æä¾›SqlCommandå‘½ä»¤ä¸­ç”¨åˆ°çš„å‚æ•°åˆ—è¡¨</param>
-        /// <returns>è¿”å›ä¸€ä¸ªæ•°å€¼è¡¨ç¤ºæ­¤SqlCommandå‘½ä»¤æ‰§è¡Œåå½±å“çš„è¡Œæ•°</returns>
-        public static int ExecuteNonQuery(SqlTransaction trans, CommandType cmdType, string cmdText,
-            params SqlParameter[] commandParameters)
-        {
-            SqlCommand cmd = new SqlCommand();
-            try
-            {
-                trans.Connection.Open();
-                PrepareCommand(cmd, trans.Connection, trans, cmdType, cmdText, commandParameters);
-                int val = cmd.ExecuteNonQuery();
-                cmd.Parameters.Clear();
-                return val;
-            }
-            catch
-            {
-                trans.Connection.Close();
-                throw;
-            }
-            //finally
-            //{
-            //    trans.Connection.Close();
-            //}
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½Ó×Ö·û´®µÄ´æ´¢¹ı³Ì,½«¶ÔÏóÊı×éµÄÖµ¸³¸ø´æ´¢¹ı³Ì²ÎÊı, 
+        /// ´Ë·½·¨ĞèÒªÔÚ²ÎÊı»º´æ·½·¨ÖĞÌ½Ë÷²ÎÊı²¢Éú³É²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Õâ¸ö·½·¨Ã»ÓĞÌá¹©·ÃÎÊÊä³ö²ÎÊıºÍ·µ»ØÖµ. 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(connString, "PublishOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="parameterValues">·ÖÅäµ½´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÊÜÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(string connectionString, string spName, params object[] parameterValues) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹û´æÔÚ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´ÓÌ½Ë÷´æ´¢¹ı³Ì²ÎÊı(¼ÓÔØµ½»º´æ)²¢·ÖÅä¸ø´æ´¢¹ı³Ì²ÎÊıÊı×é. 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteNonQuery(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÇé¿öÏÂ 
+                return ExecuteNonQuery(connectionString, CommandType.StoredProcedure, spName); 
+            } 
         }
 
-        /// <summary>
-        /// æ‰§è¡Œä¸€æ¡è¿”å›ç»“æœé›†çš„SqlCommandå‘½ä»¤ï¼Œé€šè¿‡ä¸“ç”¨çš„è¿æ¥å­—ç¬¦ä¸²ã€‚
-        /// ä½¿ç”¨å‚æ•°æ•°ç»„æä¾›å‚æ•°
-        /// </summary>
-        /// <remarks>
-        /// ä½¿ç”¨ç¤ºä¾‹ï¼š  
-        ///  SqlDataReader r = ExecuteReader(connString, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24));
-        /// </remarks>
-        /// <param name="connectionString">ä¸€ä¸ªæœ‰æ•ˆçš„æ•°æ®åº“è¿æ¥å­—ç¬¦ä¸²</param>
-        /// <param name="commandType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="commandText">å­˜å‚¨è¿‡ç¨‹çš„åå­—æˆ–è€… T-SQL è¯­å¥</param>
-        /// <param name="commandParameters">ä»¥æ•°ç»„å½¢å¼æä¾›SqlCommandå‘½ä»¤ä¸­ç”¨åˆ°çš„å‚æ•°åˆ—è¡¨</param>
-        /// <returns>è¿”å›ä¸€ä¸ªåŒ…å«ç»“æœçš„SqlDataReader</returns>
-        public static SqlDataReader ExecuteReader(string connectionString, CommandType cmdType, string cmdText,
-            params SqlParameter[] commandParameters)
-        {
-            SqlCommand cmd = new SqlCommand();
-            SqlConnection conn = new SqlConnection(connectionString);
-
-            // åœ¨è¿™é‡Œä½¿ç”¨try/catchå¤„ç†æ˜¯å› ä¸ºå¦‚æœæ–¹æ³•å‡ºç°å¼‚å¸¸ï¼Œåˆ™SqlDataReaderå°±ä¸å­˜åœ¨ï¼Œ
-            //CommandBehavior.CloseConnectionçš„è¯­å¥å°±ä¸ä¼šæ‰§è¡Œï¼Œè§¦å‘çš„å¼‚å¸¸ç”±catchæ•è·ã€‚
-            //å…³é—­æ•°æ®åº“è¿æ¥ï¼Œå¹¶é€šè¿‡throwå†æ¬¡å¼•å‘æ•æ‰åˆ°çš„å¼‚å¸¸ã€‚
-            try
-            {
-                PrepareCommand(cmd, conn, null, cmdType, cmdText, commandParameters);
-                SqlDataReader rdr = cmd.ExecuteReader();
-                cmd.Parameters.Clear();
-                return rdr;
-            }
-            catch
-            {
-                conn.Close();
-                throw;
-            }
-            finally
-            {
-                conn.Close();
-            }
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(conn, CommandType.StoredProcedure, "PublishOrders"); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ(´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü.)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(SqlConnection connection, CommandType commandType, string commandText) 
+        { 
+            return ExecuteNonQuery(connection, commandType, commandText, (SqlParameter[])null); 
         }
 
-        /// <summary>
-        /// æ‰§è¡Œä¸€æ¡è¿”å›ç¬¬ä¸€æ¡è®°å½•ç¬¬ä¸€åˆ—çš„SqlCommandå‘½ä»¤ï¼Œé€šè¿‡ä¸“ç”¨çš„è¿æ¥å­—ç¬¦ä¸²ã€‚ 
-        /// ä½¿ç”¨å‚æ•°æ•°ç»„æä¾›å‚æ•°
-        /// </summary>
-        /// <remarks>
-        /// ä½¿ç”¨ç¤ºä¾‹ï¼š  
-        ///  Object obj = ExecuteScalar(connString, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24));
-        /// </remarks>
-        /// <param name="connectionString">ä¸€ä¸ªæœ‰æ•ˆçš„æ•°æ®åº“è¿æ¥å­—ç¬¦ä¸²</param>
-        /// <param name="commandType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="commandText">å­˜å‚¨è¿‡ç¨‹çš„åå­—æˆ–è€… T-SQL è¯­å¥</param>
-        /// <param name="commandParameters">ä»¥æ•°ç»„å½¢å¼æä¾›SqlCommandå‘½ä»¤ä¸­ç”¨åˆ°çš„å‚æ•°åˆ—è¡¨</param>
-        /// <returns>è¿”å›ä¸€ä¸ªobjectç±»å‹çš„æ•°æ®ï¼Œå¯ä»¥é€šè¿‡ Convert.To{Type}æ–¹æ³•è½¬æ¢ç±»å‹</returns>
-        public static object ExecuteScalar(string connectionString, CommandType cmdType, string cmdText,
-            params SqlParameter[] commandParameters)
-        {
-            SqlCommand cmd = new SqlCommand();
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(conn, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ(´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü.)</param> 
+        /// <param name="commandText">T´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection");
 
-            using (SqlConnection connection = new SqlConnection(connectionString))
-            {
-                PrepareCommand(cmd, connection, null, cmdType, cmdText, commandParameters);
-                object val = cmd.ExecuteScalar();
-                cmd.Parameters.Clear();
-                return val;
-            }
+            // ´´½¨SqlCommandÃüÁî,²¢½øĞĞÔ¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, connection, (SqlTransaction)null, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // Finally, execute the command 
+            int retval = cmd.ExecuteNonQuery();
+
+            // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
+            cmd.Parameters.Clear(); 
+            if (mustCloseConnection) 
+                connection.Close(); 
+            return retval; 
         }
 
-        /// <summary>
-        /// æ‰§è¡Œä¸€æ¡è¿”å›ç¬¬ä¸€æ¡è®°å½•ç¬¬ä¸€åˆ—çš„SqlCommandå‘½ä»¤ï¼Œé€šè¿‡å·²ç»å­˜åœ¨çš„æ•°æ®åº“è¿æ¥ã€‚
-        /// ä½¿ç”¨å‚æ•°æ•°ç»„æä¾›å‚æ•°
-        /// </summary>
-        /// <remarks>
-        /// ä½¿ç”¨ç¤ºä¾‹ï¼š 
-        ///  Object obj = ExecuteScalar(connString, CommandType.StoredProcedure, "PublishOrders", new SqlParameter("@prodid", 24));
-        /// </remarks>
-        /// <param name="conn">ä¸€ä¸ªå·²ç»å­˜åœ¨çš„æ•°æ®åº“è¿æ¥</param>
-        /// <param name="commandType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="commandText">å­˜å‚¨è¿‡ç¨‹çš„åå­—æˆ–è€… T-SQL è¯­å¥</param>
-        /// <param name="commandParameters">ä»¥æ•°ç»„å½¢å¼æä¾›SqlCommandå‘½ä»¤ä¸­ç”¨åˆ°çš„å‚æ•°åˆ—è¡¨</param>
-        /// <returns>è¿”å›ä¸€ä¸ªobjectç±»å‹çš„æ•°æ®ï¼Œå¯ä»¥é€šè¿‡ Convert.To{Type}æ–¹æ³•è½¬æ¢ç±»å‹</returns>
-        public static object ExecuteScalar(SqlConnection connection, CommandType cmdType, string cmdText,
-            params SqlParameter[] commandParameters)
-        {
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,½«¶ÔÏóÊı×éµÄÖµ¸³¸ø´æ´¢¹ı³Ì²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(conn, "PublishOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(SqlConnection connection, string spName, params object[] parameterValues) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
 
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteNonQuery(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return ExecuteNonQuery(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞ´øÊÂÎñµÄSqlCommand. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı.:  
+        ///  int result = ExecuteNonQuery(trans, CommandType.StoredProcedure, "PublishOrders"); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ(´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü.)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(SqlTransaction transaction, CommandType commandType, string commandText) 
+        { 
+            return ExecuteNonQuery(transaction, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞ´øÊÂÎñµÄSqlCommand(Ö¸¶¨²ÎÊı). 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(trans, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ(´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü.)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(SqlTransaction transaction, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction");
+
+            // Ô¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, transaction.Connection, transaction, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // Ö´ĞĞ 
+            int retval = cmd.ExecuteNonQuery();
+
+            // Çå³ı²ÎÊı¼¯,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
+            cmd.Parameters.Clear(); 
+            return retval; 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞ´øÊÂÎñµÄSqlCommand(Ö¸¶¨²ÎÊıÖµ). 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ 
+        /// Ê¾Àı:  
+        ///  int result = ExecuteNonQuery(conn, trans, "PublishOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÊÜÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQuery(SqlTransaction transaction, string spName, params object[] parameterValues) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                return ExecuteNonQuery(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteNonQuery(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        #endregion ExecuteNonQuery·½·¨½áÊø
+
+        #region ExecuteDataset·½·¨
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  DataSet ds = ExecuteDataset(connString, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(string connectionString, CommandType commandType, string commandText) 
+        { 
+            return ExecuteDataset(connectionString, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı: 
+        ///  DataSet ds = ExecuteDataset(connString, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParamters²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(string connectionString, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString");
+
+            // ´´½¨²¢´ò¿ªÊı¾İ¿âÁ¬½Ó¶ÔÏó,²Ù×÷Íê³ÉÊÍ·Å¶ÔÏó. 
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
+                connection.Open();
+
+                // µ÷ÓÃÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®ÖØÔØ·½·¨. 
+                return ExecuteDataset(connection, commandType, commandText, commandParameters); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,Ö±½ÓÌá¹©²ÎÊıÖµ,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ. 
+        /// Ê¾Àı: 
+        ///  DataSet ds = ExecuteDataset(connString, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(string connectionString, string spName, params object[] parameterValues) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ìË÷´æ´¢¹ı³Ì²ÎÊı 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı·ÖÅäÖµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteDataset(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return ExecuteDataset(connectionString, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  DataSet ds = ExecuteDataset(conn, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(SqlConnection connection, CommandType commandType, string commandText) 
+        { 
+            return ExecuteDataset(connection, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ö¸¶¨´æ´¢¹ı³Ì²ÎÊı,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  DataSet ds = ExecuteDataset(conn, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection");
+
+            // Ô¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, connection, (SqlTransaction)null, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // ´´½¨SqlDataAdapterºÍDataSet. 
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd)) 
+            { 
+                DataSet ds = new DataSet();
+
+                // Ìî³äDataSet. 
+                da.Fill(ds);
+
+                cmd.Parameters.Clear();
+
+                if (mustCloseConnection) 
+                    connection.Close();
+
+                return ds; 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ö¸¶¨²ÎÊıÖµ,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊäÈë²ÎÊıºÍ·µ»ØÖµ. 
+        /// Ê¾Àı.:  
+        ///  DataSet ds = ExecuteDataset(conn, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(SqlConnection connection, string spName, params object[] parameterValues) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ±È»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı·ÖÅäÖµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteDataset(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return ExecuteDataset(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨ÊÂÎñµÄÃüÁî,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  DataSet ds = ExecuteDataset(trans, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="transaction">ÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(SqlTransaction transaction, CommandType commandType, string commandText) 
+        { 
+            return ExecuteDataset(transaction, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨ÊÂÎñµÄÃüÁî,Ö¸¶¨²ÎÊı,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  DataSet ds = ExecuteDataset(trans, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="transaction">ÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(SqlTransaction transaction, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction");
+
+            // Ô¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, transaction.Connection, transaction, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // ´´½¨ DataAdapter & DataSet 
+            using (SqlDataAdapter da = new SqlDataAdapter(cmd)) 
+            { 
+                DataSet ds = new DataSet(); 
+                da.Fill(ds); 
+                cmd.Parameters.Clear(); 
+                return ds; 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨ÊÂÎñµÄÃüÁî,Ö¸¶¨²ÎÊıÖµ,·µ»ØDataSet. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊäÈë²ÎÊıºÍ·µ»ØÖµ. 
+        /// Ê¾Àı.:  
+        ///  DataSet ds = ExecuteDataset(trans, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="transaction">ÊÂÎñ</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet</returns> 
+        public static DataSet ExecuteDataset(SqlTransaction transaction, string spName, params object[] parameterValues) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı·ÖÅäÖµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteDataset(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return ExecuteDataset(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        #endregion ExecuteDatasetÊı¾İ¼¯ÃüÁî½áÊø
+
+        #region ExecuteReader Êı¾İÔÄ¶ÁÆ÷
+
+        /// <summary> 
+        /// Ã¶¾Ù,±êÊ¶Êı¾İ¿âÁ¬½ÓÊÇÓÉSqlHelperÌá¹©»¹ÊÇÓÉµ÷ÓÃÕßÌá¹© 
+        /// </summary> 
+        private enum SqlConnectionOwnership 
+        { 
+            /// <summary>ÓÉSqlHelperÌá¹©Á¬½Ó</summary> 
+            Internal, 
+            /// <summary>ÓÉµ÷ÓÃÕßÌá¹©Á¬½Ó</summary> 
+            External 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÊı¾İÔÄ¶ÁÆ÷. 
+        /// </summary> 
+        /// <remarks> 
+        /// Èç¹ûÊÇSqlHelper´ò¿ªÁ¬½Ó,µ±Á¬½Ó¹Ø±ÕDataReaderÒ²½«¹Ø±Õ. 
+        /// Èç¹ûÊÇµ÷ÓÃ¶¼´ò¿ªÁ¬½Ó,DataReaderÓÉµ÷ÓÃ¶¼¹ÜÀí. 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÊÂÎñ,»òÕßÎª 'null'</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParameters²ÎÊıÊı×é,Èç¹ûÃ»ÓĞ²ÎÊıÔòÎª'null'</param> 
+        /// <param name="connectionOwnership">±êÊ¶Êı¾İ¿âÁ¬½Ó¶ÔÏóÊÇÓÉµ÷ÓÃÕßÌá¹©»¹ÊÇÓÉSqlHelperÌá¹©</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        private static SqlDataReader ExecuteReader(SqlConnection connection, SqlTransaction transaction, CommandType commandType, string commandText, SqlParameter[] commandParameters, SqlConnectionOwnership connectionOwnership) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection");
+
+            bool mustCloseConnection = false; 
+            // ´´½¨ÃüÁî 
+            SqlCommand cmd = new SqlCommand(); 
+            try 
+            { 
+                PrepareCommand(cmd, connection, transaction, commandType, commandText, commandParameters, out mustCloseConnection);
+
+                // ´´½¨Êı¾İÔÄ¶ÁÆ÷ 
+                SqlDataReader dataReader;
+
+                if (connectionOwnership == SqlConnectionOwnership.External) 
+                { 
+                    dataReader = cmd.ExecuteReader(); 
+                } 
+                else 
+                { 
+                    dataReader = cmd.ExecuteReader(CommandBehavior.CloseConnection); 
+                }
+
+                // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ.. 
+                // HACK: There is a problem here, the output parameter values are fletched 
+                // when the reader is closed, so if the parameters are detached from the command 
+                // then the SqlReader can´t set its values. 
+                // When this happen, the parameters can´t be used again in other command. 
+                bool canClear = true; 
+                foreach (SqlParameter commandParameter in cmd.Parameters) 
+                { 
+                    if (commandParameter.Direction != ParameterDirection.Input) 
+                        canClear = false; 
+                }
+
+                if (canClear) 
+                { 
+                    cmd.Parameters.Clear(); 
+                }
+
+                return dataReader; 
+            } 
+            catch 
+            { 
+                if (mustCloseConnection) 
+                    connection.Close(); 
+                throw; 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÊı¾İÔÄ¶ÁÆ÷. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(connString, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(string connectionString, CommandType commandType, string commandText) 
+        { 
+            return ExecuteReader(connectionString, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(connString, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">SqlParamter²ÎÊıÊı×é(new SqlParameter("@prodid", 24))</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(string connectionString, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            SqlConnection connection = null; 
+            try 
+            { 
+                connection = new SqlConnection(connectionString); 
+                connection.Open();
+
+                return ExecuteReader(connection, null, commandType, commandText, commandParameters, SqlConnectionOwnership.Internal); 
+            } 
+            catch 
+            { 
+                // If we fail to return the SqlDatReader, we need to close the connection ourselves 
+                if (connection != null) connection.Close(); 
+                throw; 
+            }
+
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(connString, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(string connectionString, string spName, params object[] parameterValues) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteReader(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return ExecuteReader(connectionString, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÊı¾İÔÄ¶ÁÆ÷. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(conn, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(SqlConnection connection, CommandType commandType, string commandText) 
+        { 
+            return ExecuteReader(connection, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// [µ÷ÓÃÕß·½Ê½]Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(conn, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandParameters">SqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            return ExecuteReader(connection, (SqlTransaction)null, commandType, commandText, commandParameters, SqlConnectionOwnership.External); 
+        }
+
+        /// <summary> 
+        /// [µ÷ÓÃÕß·½Ê½]Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(conn, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">T´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(SqlConnection connection, string spName, params object[] parameterValues) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteReader(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return ExecuteReader(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// [µ÷ÓÃÕß·½Ê½]Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(trans, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(SqlTransaction transaction, CommandType commandType, string commandText) 
+        { 
+            return ExecuteReader(transaction, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// [µ÷ÓÃÕß·½Ê½]Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///   SqlDataReader dr = ExecuteReader(trans, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(SqlTransaction transaction, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction");
+
+            return ExecuteReader(transaction.Connection, transaction, commandType, commandText, commandParameters, SqlConnectionOwnership.External); 
+        }
+
+        /// <summary> 
+        /// [µ÷ÓÃÕß·½Ê½]Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÊı¾İÔÄ¶ÁÆ÷,Ö¸¶¨²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  SqlDataReader dr = ExecuteReader(trans, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReader(SqlTransaction transaction, string spName, params object[] parameterValues) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                AssignParameterValues(commandParameters, parameterValues);
+
+                return ExecuteReader(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteReader(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        #endregion ExecuteReaderÊı¾İÔÄ¶ÁÆ÷
+
+        #region ExecuteScalar ·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(connString, CommandType.StoredProcedure, "GetOrderCount");
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(string connectionString, CommandType commandType, string commandText) 
+        { 
+            // Ö´ĞĞ²ÎÊıÎª¿ÕµÄ·½·¨ 
+            return ExecuteScalar(connectionString, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,Ö¸¶¨²ÎÊı,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(connString, CommandType.StoredProcedure, "GetOrderCount", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(string connectionString, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            // ´´½¨²¢´ò¿ªÊı¾İ¿âÁ¬½Ó¶ÔÏó,²Ù×÷Íê³ÉÊÍ·Å¶ÔÏó. 
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
+                connection.Open();
+
+                // µ÷ÓÃÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®ÖØÔØ·½·¨. 
+                return ExecuteScalar(connection, commandType, commandText, commandParameters); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,Ö¸¶¨²ÎÊıÖµ,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(connString, "GetOrderCount", 24, 36); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(string connectionString, string spName, params object[] parameterValues) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                return ExecuteScalar(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteScalar(connectionString, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(conn, CommandType.StoredProcedure, "GetOrderCount"); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(SqlConnection connection, CommandType commandType, string commandText) 
+        { 
+            // Ö´ĞĞ²ÎÊıÎª¿ÕµÄ·½·¨ 
+            return ExecuteScalar(connection, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ö¸¶¨²ÎÊı,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(conn, CommandType.StoredProcedure, "GetOrderCount", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection");
+
+            // ´´½¨SqlCommandÃüÁî,²¢½øĞĞÔ¤´¦Àí 
             SqlCommand cmd = new SqlCommand();
-            PrepareCommand(cmd, connection, null, cmdType, cmdText, commandParameters);
-            object val = cmd.ExecuteScalar();
+
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, connection, (SqlTransaction)null, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // Ö´ĞĞSqlCommandÃüÁî,²¢·µ»Ø½á¹û. 
+            object retval = cmd.ExecuteScalar();
+
+            // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
             cmd.Parameters.Clear();
-            return val;
+
+            if (mustCloseConnection) 
+                connection.Close();
+
+            return retval; 
         }
 
-        /// <summary>
-        /// ç¼“å­˜å‚æ•°æ•°ç»„
-        /// </summary>
-        /// <param name="cacheKey">å‚æ•°ç¼“å­˜çš„é”®å€¼</param>
-        /// <param name="cmdParms">è¢«ç¼“å­˜çš„å‚æ•°åˆ—è¡¨</param>
-        public static void CacheParameters(string cacheKey, params SqlParameter[] commandParameters)
-        {
-            parmCache[cacheKey] = commandParameters;
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ö¸¶¨²ÎÊıÖµ,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(conn, "GetOrderCount", 24, 36); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(SqlConnection connection, string spName, params object[] parameterValues) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                return ExecuteScalar(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteScalar(connection, CommandType.StoredProcedure, spName); 
+            } 
         }
 
-        /// <summary>
-        /// è·å–è¢«ç¼“å­˜çš„å‚æ•°
-        /// </summary>
-        /// <param name="cacheKey">ç”¨äºæŸ¥æ‰¾å‚æ•°çš„KEYå€¼</param>
-        /// <returns>è¿”å›ç¼“å­˜çš„å‚æ•°æ•°ç»„</returns>
-        public static SqlParameter[] GetCachedParameters(string cacheKey)
-        {
-            SqlParameter[] cachedParms = (SqlParameter[])parmCache[cacheKey];
-
-            if (cachedParms == null)
-                return null;
-
-            //æ–°å»ºä¸€ä¸ªå‚æ•°çš„å…‹éš†åˆ—è¡¨
-            SqlParameter[] clonedParms = new SqlParameter[cachedParms.Length];
-
-            //é€šè¿‡å¾ªç¯ä¸ºå…‹éš†å‚æ•°åˆ—è¡¨èµ‹å€¼
-            for (int i = 0, j = cachedParms.Length; i < j; i++)
-                //ä½¿ç”¨cloneæ–¹æ³•å¤åˆ¶å‚æ•°åˆ—è¡¨ä¸­çš„å‚æ•°
-                clonedParms[i] = (SqlParameter)((ICloneable)cachedParms[i]).Clone();
-
-            return clonedParms;
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÃüÁî,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(trans, CommandType.StoredProcedure, "GetOrderCount"); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(SqlTransaction transaction, CommandType commandType, string commandText) 
+        { 
+            // Ö´ĞĞ²ÎÊıÎª¿ÕµÄ·½·¨ 
+            return ExecuteScalar(transaction, commandType, commandText, (SqlParameter[])null); 
         }
 
-        /// <summary>
-        /// ä¸ºæ‰§è¡Œå‘½ä»¤å‡†å¤‡å‚æ•°(å‚æ•°ä¸ºæ•°ç»„)
-        /// </summary>
-        /// <param name="cmd">SqlCommand å‘½ä»¤</param>
-        /// <param name="conn">å·²ç»å­˜åœ¨çš„æ•°æ®åº“è¿æ¥</param>
-        /// <param name="trans">æ•°æ®åº“äº‹ç‰©å¤„ç†</param>
-        /// <param name="cmdType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="cmdText">Command textï¼ŒT-SQLè¯­å¥ ä¾‹å¦‚ Select * from Products</param>
-        /// <param name="cmdParms">è¿”å›å¸¦å‚æ•°çš„å‘½ä»¤</param>
-        private static void PrepareCommand(SqlCommand cmd, SqlConnection conn, SqlTransaction trans, CommandType cmdType,
-            string cmdText, SqlParameter[] cmdParms)
-        {
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÃüÁî,Ö¸¶¨²ÎÊı,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(trans, CommandType.StoredProcedure, "GetOrderCount", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(SqlTransaction transaction, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction");
 
-            //åˆ¤æ–­æ•°æ®åº“è¿æ¥çŠ¶æ€
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
+            // ´´½¨SqlCommandÃüÁî,²¢½øĞĞÔ¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, transaction.Connection, transaction, commandType, commandText, commandParameters, out mustCloseConnection);
 
-            cmd.Connection = conn;
-            cmd.CommandText = cmdText;
+            // Ö´ĞĞSqlCommandÃüÁî,²¢·µ»Ø½á¹û. 
+            object retval = cmd.ExecuteScalar();
 
-            //åˆ¤æ–­æ˜¯å¦éœ€è¦äº‹ç‰©å¤„ç†
-            if (trans != null)
-                cmd.Transaction = trans;
-
-            cmd.CommandType = cmdType;
-
-            if (cmdParms != null)
-            {
-                foreach (SqlParameter parm in cmdParms)
-                    cmd.Parameters.Add(parm);
-            }
+            // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
+            cmd.Parameters.Clear(); 
+            return retval; 
         }
 
-        /// <summary>
-        /// ä¸ºæ‰§è¡Œå‘½ä»¤å‡†å¤‡å‚æ•°
-        /// </summary>
-        /// <param name="cmd">SqlCommand å‘½ä»¤</param>
-        /// <param name="conn">å·²ç»å­˜åœ¨çš„æ•°æ®åº“è¿æ¥</param>
-        /// <param name="trans">æ•°æ®åº“äº‹ç‰©å¤„ç†</param>
-        /// <param name="cmdType">SqlCommandå‘½ä»¤ç±»å‹ (å­˜å‚¨è¿‡ç¨‹ï¼Œ T-SQLè¯­å¥ï¼Œ ç­‰ç­‰ã€‚)</param>
-        /// <param name="cmdText">Command textï¼ŒT-SQLè¯­å¥ ä¾‹å¦‚ Select * from Products</param>
-        /// <param name="cmdParms">è¿”å›å¸¦å‚æ•°çš„å‘½ä»¤</param>
-        private static void PrepareCommandOneParam(SqlCommand cmd, SqlConnection conn, SqlTransaction trans,
-            CommandType cmdType, string cmdText, SqlParameter cmdParms)
-        {
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÃüÁî,Ö¸¶¨²ÎÊıÖµ,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  int orderCount = (int)ExecuteScalar(trans, "GetOrderCount", 24, 36); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalar(SqlTransaction transaction, string spName, params object[] parameterValues) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
 
-            //åˆ¤æ–­æ•°æ®åº“è¿æ¥çŠ¶æ€
-            if (conn.State != ConnectionState.Open)
-                conn.Open();
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // PPull the parameters for this stored procedure from the parameter cache () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
 
-            cmd.Connection = conn;
-            cmd.CommandText = cmdText;
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
 
-            //åˆ¤æ–­æ˜¯å¦éœ€è¦äº‹ç‰©å¤„ç†
-            if (trans != null)
-                cmd.Transaction = trans;
-
-            cmd.CommandType = cmdType;
-
-            if (cmdParms != null)
-            {
-                cmd.Parameters.Add(cmdParms);
-            }
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                return ExecuteScalar(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteScalar(transaction, CommandType.StoredProcedure, spName); 
+            } 
         }
 
+        #endregion ExecuteScalar
 
-        /// <summary>
-        /// è·å–DataSetæ•°æ®é›†,å•ä¸ªå‚æ•°
-        /// </summary>
-        /// <param name="sqlStr"></param>
-        /// <returns></returns>
-        public static DataSet GetDataSets(string cmdText, SqlParameter commandParameters)
-        {
-            SqlCommand cmd = new SqlCommand();
-            SqlConnection conn = new SqlConnection(SqlHelper.ConnectionStringLocalTransaction);
+        #region ExecuteXmlReader XMLÔÄ¶ÁÆ÷ 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄSqlCommandÃüÁî,²¢²úÉúÒ»¸öXmlReader¶ÔÏó×öÎª½á¹û¼¯·µ»Ø. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  XmlReader r = ExecuteXmlReader(conn, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä using "FOR XML AUTO"</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReader(SqlConnection connection, CommandType commandType, string commandText) 
+        { 
+            // Ö´ĞĞ²ÎÊıÎª¿ÕµÄ·½·¨ 
+            return ExecuteXmlReader(connection, commandType, commandText, (SqlParameter[])null); 
+        }
 
-            // åœ¨è¿™é‡Œä½¿ç”¨try/catchå¤„ç†æ˜¯å› ä¸ºå¦‚æœæ–¹æ³•å‡ºç°å¼‚å¸¸ï¼Œåˆ™SqlDataReaderå°±ä¸å­˜åœ¨ï¼Œ
-            //CommandBehavior.CloseConnectionçš„è¯­å¥å°±ä¸ä¼šæ‰§è¡Œï¼Œè§¦å‘çš„å¼‚å¸¸ç”±catchæ•è·ã€‚
-            //å…³é—­æ•°æ®åº“è¿æ¥ï¼Œå¹¶é€šè¿‡throwå†æ¬¡å¼•å‘æ•æ‰åˆ°çš„å¼‚å¸¸ã€‚
-            try
-            {
-                PrepareCommandOneParam(cmd, conn, null, CommandType.Text, cmdText, commandParameters);
-                SqlDataAdapter sda = new SqlDataAdapter(cmd);
-                DataSet ds = new DataSet();
-                sda.Fill(ds);
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄSqlCommandÃüÁî,²¢²úÉúÒ»¸öXmlReader¶ÔÏó×öÎª½á¹û¼¯·µ»Ø,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  XmlReader r = ExecuteXmlReader(conn, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä using "FOR XML AUTO"</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReader(SqlConnection connection, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection");
+
+            bool mustCloseConnection = false; 
+            // ´´½¨SqlCommandÃüÁî,²¢½øĞĞÔ¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            try 
+            { 
+                PrepareCommand(cmd, connection, (SqlTransaction)null, commandType, commandText, commandParameters, out mustCloseConnection);
+
+                // Ö´ĞĞÃüÁî 
+                XmlReader retval = cmd.ExecuteXmlReader();
+
+                // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
                 cmd.Parameters.Clear();
-                return ds;
-            }
-            catch
+
+                return retval; 
+            } 
+            catch 
+            { 
+                if (mustCloseConnection) 
+                    connection.Close(); 
+                throw; 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄSqlCommandÃüÁî,²¢²úÉúÒ»¸öXmlReader¶ÔÏó×öÎª½á¹û¼¯·µ»Ø,Ö¸¶¨²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  XmlReader r = ExecuteXmlReader(conn, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ using "FOR XML AUTO"</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReader(SqlConnection connection, string spName, params object[] parameterValues) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                return ExecuteXmlReader(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteXmlReader(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄSqlCommandÃüÁî,²¢²úÉúÒ»¸öXmlReader¶ÔÏó×öÎª½á¹û¼¯·µ»Ø. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  XmlReader r = ExecuteXmlReader(trans, CommandType.StoredProcedure, "GetOrders"); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä using "FOR XML AUTO"</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReader(SqlTransaction transaction, CommandType commandType, string commandText) 
+        { 
+            // Ö´ĞĞ²ÎÊıÎª¿ÕµÄ·½·¨ 
+            return ExecuteXmlReader(transaction, commandType, commandText, (SqlParameter[])null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄSqlCommandÃüÁî,²¢²úÉúÒ»¸öXmlReader¶ÔÏó×öÎª½á¹û¼¯·µ»Ø,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  XmlReader r = ExecuteXmlReader(trans, CommandType.StoredProcedure, "GetOrders", new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä using "FOR XML AUTO"</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReader(SqlTransaction transaction, CommandType commandType, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction");
+
+            // ´´½¨SqlCommandÃüÁî,²¢½øĞĞÔ¤´¦Àí 
+            SqlCommand cmd = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(cmd, transaction.Connection, transaction, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // Ö´ĞĞÃüÁî 
+            XmlReader retval = cmd.ExecuteXmlReader();
+
+            // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
+            cmd.Parameters.Clear(); 
+            return retval; 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄSqlCommandÃüÁî,²¢²úÉúÒ»¸öXmlReader¶ÔÏó×öÎª½á¹û¼¯·µ»Ø,Ö¸¶¨²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  XmlReader r = ExecuteXmlReader(trans, "GetOrders", 24, 36); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet.</returns> 
+        public static XmlReader ExecuteXmlReader(SqlTransaction transaction, string spName, params object[] parameterValues) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                return ExecuteXmlReader(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                return ExecuteXmlReader(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        #endregion ExecuteXmlReader ÔÄ¶ÁÆ÷½áÊø
+
+        #region FillDataset Ìî³äÊı¾İ¼¯ 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(connString, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.)</param> 
+        public static void FillDataset(string connectionString, CommandType commandType, string commandText, DataSet dataSet, string[] tableNames) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (dataSet == null) throw new ArgumentNullException("dataSet");
+
+            // ´´½¨²¢´ò¿ªÊı¾İ¿âÁ¬½Ó¶ÔÏó,²Ù×÷Íê³ÉÊÍ·Å¶ÔÏó. 
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
+                connection.Open();
+
+                // µ÷ÓÃÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®ÖØÔØ·½·¨. 
+                FillDataset(connection, commandType, commandText, dataSet, tableNames); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯.Ö¸¶¨ÃüÁî²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(connString, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}, new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        public static void FillDataset(string connectionString, CommandType commandType, 
+            string commandText, DataSet dataSet, string[] tableNames, 
+            params SqlParameter[] commandParameters) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (dataSet == null) throw new ArgumentNullException("dataSet"); 
+            // ´´½¨²¢´ò¿ªÊı¾İ¿âÁ¬½Ó¶ÔÏó,²Ù×÷Íê³ÉÊÍ·Å¶ÔÏó. 
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
+                connection.Open();
+
+                // µ÷ÓÃÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®ÖØÔØ·½·¨. 
+                FillDataset(connection, commandType, commandText, dataSet, tableNames, commandParameters); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®µÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯,Ö¸¶¨´æ´¢¹ı³Ì²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  FillDataset(connString, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}, 24); 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param>    
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        public static void FillDataset(string connectionString, string spName, 
+            DataSet dataSet, string[] tableNames, 
+            params object[] parameterValues) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (dataSet == null) throw new ArgumentNullException("dataSet"); 
+            // ´´½¨²¢´ò¿ªÊı¾İ¿âÁ¬½Ó¶ÔÏó,²Ù×÷Íê³ÉÊÍ·Å¶ÔÏó. 
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
+                connection.Open();
+
+                // µ÷ÓÃÖ¸¶¨Êı¾İ¿âÁ¬½Ó×Ö·û´®ÖØÔØ·½·¨. 
+                FillDataset(connection, spName, dataSet, tableNames, parameterValues); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(conn, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param>    
+        public static void FillDataset(SqlConnection connection, CommandType commandType, 
+            string commandText, DataSet dataSet, string[] tableNames) 
+        { 
+            FillDataset(connection, commandType, commandText, dataSet, tableNames, null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(conn, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}, new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        public static void FillDataset(SqlConnection connection, CommandType commandType, 
+            string commandText, DataSet dataSet, string[] tableNames, 
+            params SqlParameter[] commandParameters) 
+        { 
+            FillDataset(connection, null, commandType, commandText, dataSet, tableNames, commandParameters); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏóµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯,Ö¸¶¨´æ´¢¹ı³Ì²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  FillDataset(conn, "GetOrders", ds, new string[] {"orders"}, 24, 36); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        public static void FillDataset(SqlConnection connection, string spName, 
+            DataSet dataSet, string[] tableNames, 
+            params object[] parameterValues) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (dataSet == null) throw new ArgumentNullException("dataSet"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                FillDataset(connection, CommandType.StoredProcedure, spName, dataSet, tableNames, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                FillDataset(connection, CommandType.StoredProcedure, spName, dataSet, tableNames); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(trans, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        public static void FillDataset(SqlTransaction transaction, CommandType commandType, 
+            string commandText, 
+            DataSet dataSet, string[] tableNames) 
+        { 
+            FillDataset(transaction, commandType, commandText, dataSet, tableNames, null); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯,Ö¸¶¨²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(trans, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}, new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        public static void FillDataset(SqlTransaction transaction, CommandType commandType, 
+            string commandText, DataSet dataSet, string[] tableNames, 
+            params SqlParameter[] commandParameters) 
+        { 
+            FillDataset(transaction.Connection, transaction, commandType, commandText, dataSet, tableNames, commandParameters); 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Êı¾İ¿âÊÂÎñµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯,Ö¸¶¨´æ´¢¹ı³Ì²ÎÊıÖµ. 
+        /// </summary> 
+        /// <remarks> 
+        /// ´Ë·½·¨²»Ìá¹©·ÃÎÊ´æ´¢¹ı³ÌÊä³ö²ÎÊıºÍ·µ»ØÖµ²ÎÊı. 
+        /// 
+        /// Ê¾Àı:  
+        ///  FillDataset(trans, "GetOrders", ds, new string[]{"orders"}, 24, 36); 
+        /// </remarks> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        /// <param name="parameterValues">·ÖÅä¸ø´æ´¢¹ı³ÌÊäÈë²ÎÊıµÄ¶ÔÏóÊı×é</param> 
+        public static void FillDataset(SqlTransaction transaction, string spName, 
+            DataSet dataSet, string[] tableNames, 
+            params object[] parameterValues) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (dataSet == null) throw new ArgumentNullException("dataSet"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((parameterValues != null) && (parameterValues.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ¸ø´æ´¢¹ı³Ì²ÎÊı¸³Öµ 
+                AssignParameterValues(commandParameters, parameterValues);
+
+                // µ÷ÓÃÖØÔØ·½·¨ 
+                FillDataset(transaction, CommandType.StoredProcedure, spName, dataSet, tableNames, commandParameters); 
+            } 
+            else 
+            { 
+                // Ã»ÓĞ²ÎÊıÖµ 
+                FillDataset(transaction, CommandType.StoredProcedure, spName, dataSet, tableNames); 
+            } 
+        }
+
+        /// <summary> 
+        /// [Ë½ÓĞ·½·¨][ÄÚ²¿µ÷ÓÃ]Ö´ĞĞÖ¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏó/ÊÂÎñµÄÃüÁî,Ó³ÉäÊı¾İ±í²¢Ìî³äÊı¾İ¼¯,DataSet/TableNames/SqlParameters. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  FillDataset(conn, trans, CommandType.StoredProcedure, "GetOrders", ds, new string[] {"orders"}, new SqlParameter("@prodid", 24)); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ</param> 
+        /// <param name="commandType">ÃüÁîÀàĞÍ (´æ´¢¹ı³Ì,ÃüÁîÎÄ±¾»òÆäËü)</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû³Æ»òT-SQLÓï¾ä</param> 
+        /// <param name="dataSet">ÒªÌî³ä½á¹û¼¯µÄDataSetÊµÀı</param> 
+        /// <param name="tableNames">±íÓ³ÉäµÄÊı¾İ±íÊı×é 
+        /// ÓÃ»§¶¨ÒåµÄ±íÃû (¿ÉÓĞÊÇÊµ¼ÊµÄ±íÃû.) 
+        /// </param> 
+        /// <param name="commandParameters">·ÖÅä¸øÃüÁîµÄSqlParamter²ÎÊıÊı×é</param> 
+        private static void FillDataset(SqlConnection connection, SqlTransaction transaction, CommandType commandType, 
+            string commandText, DataSet dataSet, string[] tableNames, 
+            params SqlParameter[] commandParameters) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (dataSet == null) throw new ArgumentNullException("dataSet");
+
+            // ´´½¨SqlCommandÃüÁî,²¢½øĞĞÔ¤´¦Àí 
+            SqlCommand command = new SqlCommand(); 
+            bool mustCloseConnection = false; 
+            PrepareCommand(command, connection, transaction, commandType, commandText, commandParameters, out mustCloseConnection);
+
+            // Ö´ĞĞÃüÁî 
+            using (SqlDataAdapter dataAdapter = new SqlDataAdapter(command)) 
             {
-                conn.Close();
-                throw;
+
+                // ×·¼Ó±íÓ³Éä 
+                if (tableNames != null && tableNames.Length > 0) 
+                { 
+                    string tableName = "Table"; 
+                    for (int index = 0; index < tableNames.Length; index++) 
+                    { 
+                        if (tableNames[index] == null || tableNames[index].Length == 0) throw new ArgumentException("The tableNames parameter must contain a list of tables, a value was provided as null or empty string.", "tableNames"); 
+                        dataAdapter.TableMappings.Add(tableName, tableNames[index]); 
+                        tableName += (index + 1).ToString(); 
+                    } 
+                }
+
+                // Ìî³äÊı¾İ¼¯Ê¹ÓÃÄ¬ÈÏ±íÃû³Æ 
+                dataAdapter.Fill(dataSet);
+
+                // Çå³ı²ÎÊı,ÒÔ±ãÔÙ´ÎÊ¹ÓÃ. 
+                command.Parameters.Clear(); 
             }
-            finally
-            {
-                conn.Close();
+
+            if (mustCloseConnection) 
+                connection.Close(); 
+        } 
+        #endregion
+
+        #region UpdateDataset ¸üĞÂÊı¾İ¼¯ 
+        /// <summary> 
+        /// Ö´ĞĞÊı¾İ¼¯¸üĞÂµ½Êı¾İ¿â,Ö¸¶¨inserted, updated, or deletedÃüÁî. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  UpdateDataset(conn, insertCommand, deleteCommand, updateCommand, dataSet, "Order"); 
+        /// </remarks> 
+        /// <param name="insertCommand">[×·¼Ó¼ÇÂ¼]Ò»¸öÓĞĞ§µÄT-SQLÓï¾ä»ò´æ´¢¹ı³Ì</param> 
+        /// <param name="deleteCommand">[É¾³ı¼ÇÂ¼]Ò»¸öÓĞĞ§µÄT-SQLÓï¾ä»ò´æ´¢¹ı³Ì</param> 
+        /// <param name="updateCommand">[¸üĞÂ¼ÇÂ¼]Ò»¸öÓĞĞ§µÄT-SQLÓï¾ä»ò´æ´¢¹ı³Ì</param> 
+        /// <param name="dataSet">Òª¸üĞÂµ½Êı¾İ¿âµÄDataSet</param> 
+        /// <param name="tableName">Òª¸üĞÂµ½Êı¾İ¿âµÄDataTable</param> 
+        public static void UpdateDataset(SqlCommand insertCommand, SqlCommand deleteCommand, SqlCommand updateCommand, DataSet dataSet, string tableName) 
+        { 
+            if (insertCommand == null) throw new ArgumentNullException("insertCommand"); 
+            if (deleteCommand == null) throw new ArgumentNullException("deleteCommand"); 
+            if (updateCommand == null) throw new ArgumentNullException("updateCommand"); 
+            if (tableName == null || tableName.Length == 0) throw new ArgumentNullException("tableName");
+
+            // ´´½¨SqlDataAdapter,µ±²Ù×÷Íê³ÉºóÊÍ·Å. 
+            using (SqlDataAdapter dataAdapter = new SqlDataAdapter()) 
+            { 
+                // ÉèÖÃÊı¾İÊÊÅäÆ÷ÃüÁî 
+                dataAdapter.UpdateCommand = updateCommand; 
+                dataAdapter.InsertCommand = insertCommand; 
+                dataAdapter.DeleteCommand = deleteCommand;
+
+                // ¸üĞÂÊı¾İ¼¯¸Ä±äµ½Êı¾İ¿â 
+                dataAdapter.Update(dataSet, tableName);
+
+                // Ìá½»ËùÓĞ¸Ä±äµ½Êı¾İ¼¯. 
+                dataSet.AcceptChanges(); 
+            } 
+        } 
+        #endregion
+
+        #region CreateCommand ´´½¨Ò»ÌõSqlCommandÃüÁî 
+        /// <summary> 
+        /// ´´½¨SqlCommandÃüÁî,Ö¸¶¨Êı¾İ¿âÁ¬½Ó¶ÔÏó,´æ´¢¹ı³ÌÃûºÍ²ÎÊı. 
+        /// </summary> 
+        /// <remarks> 
+        /// Ê¾Àı:  
+        ///  SqlCommand command = CreateCommand(conn, "AddCustomer", "CustomerID", "CustomerName"); 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="sourceColumns">Ô´±íµÄÁĞÃû³ÆÊı×é</param> 
+        /// <returns>·µ»ØSqlCommandÃüÁî</returns> 
+        public static SqlCommand CreateCommand(SqlConnection connection, string spName, params string[] sourceColumns) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // ´´½¨ÃüÁî 
+            SqlCommand cmd = new SqlCommand(spName, connection); 
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            // Èç¹ûÓĞ²ÎÊıÖµ 
+            if ((sourceColumns != null) && (sourceColumns.Length > 0)) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ½«Ô´±íµÄÁĞµ½Ó³Éäµ½DataSetÃüÁîÖĞ. 
+                for (int index = 0; index < sourceColumns.Length; index++) 
+                    commandParameters[index].SourceColumn = sourceColumns[index];
+
+                // Attach the discovered parameters to the SqlCommand object 
+                AttachParameters(cmd, commandParameters); 
             }
+
+            return cmd; 
+        } 
+        #endregion
+
+        #region ExecuteNonQueryTypedParams ÀàĞÍ»¯²ÎÊı(DataRow) 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó×Ö·û´®µÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØÊÜÓ°ÏìµÄĞĞÊı. 
+        /// </summary> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQueryTypedParams(String connectionString, String spName, DataRow dataRow) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteNonQuery(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteNonQuery(connectionString, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó¶ÔÏóµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØÊÜÓ°ÏìµÄĞĞÊı. 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQueryTypedParams(SqlConnection connection, String spName, DataRow dataRow) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteNonQuery(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteNonQuery(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÊÂÎïµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØÊÜÓ°ÏìµÄĞĞÊı. 
+        /// </summary> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ object</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØÓ°ÏìµÄĞĞÊı</returns> 
+        public static int ExecuteNonQueryTypedParams(SqlTransaction transaction, String spName, DataRow dataRow) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Sf the row has values, the store procedure parameters must be initialized 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteNonQuery(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteNonQuery(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        } 
+        #endregion
+
+        #region ExecuteDatasetTypedParams ÀàĞÍ»¯²ÎÊı(DataRow) 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó×Ö·û´®µÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØDataSet. 
+        /// </summary> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet.</returns> 
+        public static DataSet ExecuteDatasetTypedParams(string connectionString, String spName, DataRow dataRow) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            //Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteDataset(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteDataset(connectionString, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó¶ÔÏóµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØDataSet. 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet.</returns> 
+        /// 
+        public static DataSet ExecuteDatasetTypedParams(SqlConnection connection, String spName, DataRow dataRow) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteDataset(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÊÂÎñµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØDataSet. 
+        /// </summary> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ object</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØÒ»¸ö°üº¬½á¹û¼¯µÄDataSet.</returns> 
+        public static DataSet ExecuteDatasetTypedParams(SqlTransaction transaction, String spName, DataRow dataRow) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteDataset(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteDataset(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        #endregion
+
+        #region ExecuteReaderTypedParams ÀàĞÍ»¯²ÎÊı(DataRow) 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó×Ö·û´®µÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØDataReader. 
+        /// </summary> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReaderTypedParams(String connectionString, String spName, DataRow dataRow) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteReader(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteReader(connectionString, CommandType.StoredProcedure, spName); 
+            } 
         }
 
 
-        /// <summary>
-        /// è·å–DataSetæ•°æ®é›†,å¤šä¸ªå‚æ•°
-        /// </summary>
-        /// <param name="sqlStr"></param>
-        /// <returns></returns>
-        public static DataSet GetDataSetsMore(string cmdText, SqlParameter[] commandParameters)
-        {
-            SqlCommand cmd = new SqlCommand();
-            SqlConnection conn = new SqlConnection(SqlHelper.ConnectionStringLocalTransaction);
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó¶ÔÏóµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØDataReader. 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReaderTypedParams(SqlConnection connection, String spName, DataRow dataRow) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
 
-            // åœ¨è¿™é‡Œä½¿ç”¨try/catchå¤„ç†æ˜¯å› ä¸ºå¦‚æœæ–¹æ³•å‡ºç°å¼‚å¸¸ï¼Œåˆ™SqlDataReaderå°±ä¸å­˜åœ¨ï¼Œ
-            //CommandBehavior.CloseConnectionçš„è¯­å¥å°±ä¸ä¼šæ‰§è¡Œï¼Œè§¦å‘çš„å¼‚å¸¸ç”±catchæ•è·ã€‚
-            //å…³é—­æ•°æ®åº“è¿æ¥ï¼Œå¹¶é€šè¿‡throwå†æ¬¡å¼•å‘æ•æ‰åˆ°çš„å¼‚å¸¸ã€‚
-            try
-            {
-                PrepareCommand(cmd, conn, null, CommandType.Text, cmdText, commandParameters);
-                SqlDataAdapter sda = new SqlDataAdapter(cmd);
-                DataSet ds = new DataSet();
-                sda.Fill(ds);
-                cmd.Parameters.Clear();
-                return ds;
-            }
-            catch
-            {
-                conn.Close();
-                throw;
-            }
-            finally
-            {
-                conn.Close();
-            }
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteReader(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteReader(connection, CommandType.StoredProcedure, spName); 
+            } 
         }
 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÊÂÎïµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØDataReader. 
+        /// </summary> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ object</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»Ø°üº¬½á¹û¼¯µÄSqlDataReader</returns> 
+        public static SqlDataReader ExecuteReaderTypedParams(SqlTransaction transaction, String spName, DataRow dataRow) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
 
-        /// <summary>
-        /// è·å–DataSetæ•°æ®é›†
-        /// </summary>
-        /// <param name="sqlStr"></param>
-        /// <returns></returns>
-        public static DataSet GetDataSet(string sqlStr)
-        {
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
 
-            SqlConnection conn = new SqlConnection(SqlHelper.ConnectionStringLocalTransaction);
-            //conn = DecrptConnctionString(conn);
-            try
-            {
-                conn.Open();
-                SqlDataAdapter sda = new SqlDataAdapter(sqlStr, conn);
-                DataSet ds = new DataSet();
-                sda.Fill(ds);
-                return ds;
-            }
-            catch (Exception ex)
-            {
-                conn.Close();
-                throw new Exception(ex.Message);
-            }
-            finally
-            {
-                conn.Close();
-            }
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteReader(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteReader(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        } 
+        #endregion
+
+        #region ExecuteScalarTypedParams ÀàĞÍ»¯²ÎÊı(DataRow) 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó×Ö·û´®µÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalarTypedParams(String connectionString, String spName, DataRow dataRow) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connectionString, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteScalar(connectionString, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteScalar(connectionString, CommandType.StoredProcedure, spName); 
+            } 
         }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó¶ÔÏóµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalarTypedParams(SqlConnection connection, String spName, DataRow dataRow) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteScalar(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteScalar(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÊÂÎñµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ. 
+        /// </summary> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ object</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»Ø½á¹û¼¯ÖĞµÄµÚÒ»ĞĞµÚÒ»ÁĞ</returns> 
+        public static object ExecuteScalarTypedParams(SqlTransaction transaction, String spName, DataRow dataRow) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteScalar(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteScalar(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        } 
+        #endregion
+
+        #region ExecuteXmlReaderTypedParams ÀàĞÍ»¯²ÎÊı(DataRow) 
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÁ¬½Ó¶ÔÏóµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØXmlReaderÀàĞÍµÄ½á¹û¼¯. 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReaderTypedParams(SqlConnection connection, String spName, DataRow dataRow) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteXmlReader(connection, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteXmlReader(connection, CommandType.StoredProcedure, spName); 
+            } 
+        }
+
+        /// <summary> 
+        /// Ö´ĞĞÖ¸¶¨Á¬½ÓÊı¾İ¿âÊÂÎñµÄ´æ´¢¹ı³Ì,Ê¹ÓÃDataRow×öÎª²ÎÊıÖµ,·µ»ØXmlReaderÀàĞÍµÄ½á¹û¼¯. 
+        /// </summary> 
+        /// <param name="transaction">Ò»¸öÓĞĞ§µÄÁ¬½ÓÊÂÎñ object</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="dataRow">Ê¹ÓÃDataRow×÷Îª²ÎÊıÖµ</param> 
+        /// <returns>·µ»ØXmlReader½á¹û¼¯¶ÔÏó.</returns> 
+        public static XmlReader ExecuteXmlReaderTypedParams(SqlTransaction transaction, String spName, DataRow dataRow) 
+        { 
+            if (transaction == null) throw new ArgumentNullException("transaction"); 
+            if (transaction != null && transaction.Connection == null) throw new ArgumentException("The transaction was rollbacked or commited, please provide an open transaction.", "transaction"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            // Èç¹ûrowÓĞÖµ,´æ´¢¹ı³Ì±ØĞë³õÊ¼»¯. 
+            if (dataRow != null && dataRow.ItemArray.Length > 0) 
+            { 
+                // ´Ó»º´æÖĞ¼ÓÔØ´æ´¢¹ı³Ì²ÎÊı,Èç¹û»º´æÖĞ²»´æÔÚÔò´ÓÊı¾İ¿âÖĞ¼ìË÷²ÎÊıĞÅÏ¢²¢¼ÓÔØµ½»º´æÖĞ. () 
+                SqlParameter[] commandParameters = SqlHelperParameterCache.GetSpParameterSet(transaction.Connection, spName);
+
+                // ·ÖÅä²ÎÊıÖµ 
+                AssignParameterValues(commandParameters, dataRow);
+
+                return SqlHelper.ExecuteXmlReader(transaction, CommandType.StoredProcedure, spName, commandParameters); 
+            } 
+            else 
+            { 
+                return SqlHelper.ExecuteXmlReader(transaction, CommandType.StoredProcedure, spName); 
+            } 
+        } 
+        #endregion
 
     }
+
+    /// <summary> 
+    /// SqlHelperParameterCacheÌá¹©»º´æ´æ´¢¹ı³Ì²ÎÊı,²¢ÄÜ¹»ÔÚÔËĞĞÊ±´Ó´æ´¢¹ı³ÌÖĞÌ½Ë÷²ÎÊı. 
+    /// </summary> 
+    public abstract class SqlHelperParameterCache 
+    { 
+        #region Ë½ÓĞ·½·¨,×Ö¶Î,¹¹Ôìº¯Êı 
+        // Ë½ÓĞ¹¹Ôìº¯Êı,·ÁÖ¹Àà±»ÊµÀı»¯. 
+        private SqlHelperParameterCache() { }
+
+        // Õâ¸ö·½·¨Òª×¢Òâ 
+        private static Hashtable paramCache = Hashtable.Synchronized(new Hashtable());
+
+        /// <summary> 
+        /// Ì½Ë÷ÔËĞĞÊ±µÄ´æ´¢¹ı³Ì,·µ»ØSqlParameter²ÎÊıÊı×é. 
+        /// ³õÊ¼»¯²ÎÊıÖµÎª DBNull.Value. 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû³Æ</param> 
+        /// <param name="includeReturnValueParameter">ÊÇ·ñ°üº¬·µ»ØÖµ²ÎÊı</param> 
+        /// <returns>·µ»ØSqlParameter²ÎÊıÊı×é</returns> 
+        private static SqlParameter[] DiscoverSpParameterSet(SqlConnection connection, string spName, bool includeReturnValueParameter) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            SqlCommand cmd = new SqlCommand(spName, connection); 
+            cmd.CommandType = CommandType.StoredProcedure;
+
+            connection.Open(); 
+            // ¼ìË÷cmdÖ¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊıĞÅÏ¢,²¢Ìî³äµ½cmdµÄParameters²ÎÊı¼¯ÖĞ. 
+            SqlCommandBuilder.DeriveParameters(cmd); 
+            connection.Close(); 
+            // Èç¹û²»°üº¬·µ»ØÖµ²ÎÊı,½«²ÎÊı¼¯ÖĞµÄÃ¿Ò»¸ö²ÎÊıÉ¾³ı. 
+            if (!includeReturnValueParameter) 
+            { 
+                cmd.Parameters.RemoveAt(0); 
+            }
+
+            // ´´½¨²ÎÊıÊı×é 
+            SqlParameter[] discoveredParameters = new SqlParameter[cmd.Parameters.Count]; 
+            // ½«cmdµÄParameters²ÎÊı¼¯¸´ÖÆµ½discoveredParametersÊı×é. 
+            cmd.Parameters.CopyTo(discoveredParameters, 0);
+
+            // ³õÊ¼»¯²ÎÊıÖµÎª DBNull.Value. 
+            foreach (SqlParameter discoveredParameter in discoveredParameters) 
+            { 
+                discoveredParameter.Value = DBNull.Value; 
+            } 
+            return discoveredParameters; 
+        }
+
+        /// <summary> 
+        /// SqlParameter²ÎÊıÊı×éµÄÉî²ã¿½±´. 
+        /// </summary> 
+        /// <param name="originalParameters">Ô­Ê¼²ÎÊıÊı×é</param> 
+        /// <returns>·µ»ØÒ»¸öÍ¬ÑùµÄ²ÎÊıÊı×é</returns> 
+        private static SqlParameter[] CloneParameters(SqlParameter[] originalParameters) 
+        { 
+            SqlParameter[] clonedParameters = new SqlParameter[originalParameters.Length];
+
+            for (int i = 0, j = originalParameters.Length; i < j; i++) 
+            { 
+                clonedParameters[i] = (SqlParameter)((ICloneable)originalParameters[i]).Clone(); 
+            }
+
+            return clonedParameters; 
+        }
+
+        #endregion Ë½ÓĞ·½·¨,×Ö¶Î,¹¹Ôìº¯Êı½áÊø
+
+        #region »º´æ·½·¨
+
+        /// <summary> 
+        /// ×·¼Ó²ÎÊıÊı×éµ½»º´æ. 
+        /// </summary> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û´®</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òSQLÓï¾ä</param> 
+        /// <param name="commandParameters">Òª»º´æµÄ²ÎÊıÊı×é</param> 
+        public static void CacheParameterSet(string connectionString, string commandText, params SqlParameter[] commandParameters) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (commandText == null || commandText.Length == 0) throw new ArgumentNullException("commandText");
+
+            string hashKey = connectionString + ":" + commandText;
+
+            paramCache[hashKey] = commandParameters; 
+        }
+
+        /// <summary> 
+        /// ´Ó»º´æÖĞ»ñÈ¡²ÎÊıÊı×é. 
+        /// </summary> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û</param> 
+        /// <param name="commandText">´æ´¢¹ı³ÌÃû»òSQLÓï¾ä</param> 
+        /// <returns>²ÎÊıÊı×é</returns> 
+        public static SqlParameter[] GetCachedParameterSet(string connectionString, string commandText) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (commandText == null || commandText.Length == 0) throw new ArgumentNullException("commandText");
+
+            string hashKey = connectionString + ":" + commandText;
+
+            SqlParameter[] cachedParameters = paramCache[hashKey] as SqlParameter[]; 
+            if (cachedParameters == null) 
+            { 
+                return null; 
+            } 
+            else 
+            { 
+                return CloneParameters(cachedParameters); 
+            } 
+        }
+
+        #endregion »º´æ·½·¨½áÊø
+
+        #region ¼ìË÷Ö¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊı¼¯
+
+        /// <summary> 
+        /// ·µ»ØÖ¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊı¼¯ 
+        /// </summary> 
+        /// <remarks> 
+        /// Õâ¸ö·½·¨½«²éÑ¯Êı¾İ¿â,²¢½«ĞÅÏ¢´æ´¢µ½»º´æ. 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <returns>·µ»ØSqlParameter²ÎÊıÊı×é</returns> 
+        public static SqlParameter[] GetSpParameterSet(string connectionString, string spName) 
+        { 
+            return GetSpParameterSet(connectionString, spName, false); 
+        }
+
+        /// <summary> 
+        /// ·µ»ØÖ¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊı¼¯ 
+        /// </summary> 
+        /// <remarks> 
+        /// Õâ¸ö·½·¨½«²éÑ¯Êı¾İ¿â,²¢½«ĞÅÏ¢´æ´¢µ½»º´æ. 
+        /// </remarks> 
+        /// <param name="connectionString">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û.</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="includeReturnValueParameter">ÊÇ·ñ°üº¬·µ»ØÖµ²ÎÊı</param> 
+        /// <returns>·µ»ØSqlParameter²ÎÊıÊı×é</returns> 
+        public static SqlParameter[] GetSpParameterSet(string connectionString, string spName, bool includeReturnValueParameter) 
+        { 
+            if (connectionString == null || connectionString.Length == 0) throw new ArgumentNullException("connectionString"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            using (SqlConnection connection = new SqlConnection(connectionString)) 
+            { 
+                return GetSpParameterSetInternal(connection, spName, includeReturnValueParameter); 
+            } 
+        }
+
+        /// <summary> 
+        /// [ÄÚ²¿]·µ»ØÖ¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊı¼¯(Ê¹ÓÃÁ¬½Ó¶ÔÏó). 
+        /// </summary> 
+        /// <remarks> 
+        /// Õâ¸ö·½·¨½«²éÑ¯Êı¾İ¿â,²¢½«ĞÅÏ¢´æ´¢µ½»º´æ. 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó×Ö·û</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <returns>·µ»ØSqlParameter²ÎÊıÊı×é</returns> 
+        internal static SqlParameter[] GetSpParameterSet(SqlConnection connection, string spName) 
+        { 
+            return GetSpParameterSet(connection, spName, false); 
+        }
+
+        /// <summary> 
+        /// [ÄÚ²¿]·µ»ØÖ¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊı¼¯(Ê¹ÓÃÁ¬½Ó¶ÔÏó) 
+        /// </summary> 
+        /// <remarks> 
+        /// Õâ¸ö·½·¨½«²éÑ¯Êı¾İ¿â,²¢½«ĞÅÏ¢´æ´¢µ½»º´æ. 
+        /// </remarks> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="includeReturnValueParameter"> 
+        /// ÊÇ·ñ°üº¬·µ»ØÖµ²ÎÊı 
+        /// </param> 
+        /// <returns>·µ»ØSqlParameter²ÎÊıÊı×é</returns> 
+        internal static SqlParameter[] GetSpParameterSet(SqlConnection connection, string spName, bool includeReturnValueParameter) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            using (SqlConnection clonedConnection = (SqlConnection)((ICloneable)connection).Clone()) 
+            { 
+                return GetSpParameterSetInternal(clonedConnection, spName, includeReturnValueParameter); 
+            } 
+        }
+
+        /// <summary> 
+        /// [Ë½ÓĞ]·µ»ØÖ¸¶¨µÄ´æ´¢¹ı³ÌµÄ²ÎÊı¼¯(Ê¹ÓÃÁ¬½Ó¶ÔÏó) 
+        /// </summary> 
+        /// <param name="connection">Ò»¸öÓĞĞ§µÄÊı¾İ¿âÁ¬½Ó¶ÔÏó</param> 
+        /// <param name="spName">´æ´¢¹ı³ÌÃû</param> 
+        /// <param name="includeReturnValueParameter">ÊÇ·ñ°üº¬·µ»ØÖµ²ÎÊı</param> 
+        /// <returns>·µ»ØSqlParameter²ÎÊıÊı×é</returns> 
+        private static SqlParameter[] GetSpParameterSetInternal(SqlConnection connection, string spName, bool includeReturnValueParameter) 
+        { 
+            if (connection == null) throw new ArgumentNullException("connection"); 
+            if (spName == null || spName.Length == 0) throw new ArgumentNullException("spName");
+
+            string hashKey = connection.ConnectionString + ":" + spName + (includeReturnValueParameter ? ":include ReturnValue Parameter" : "");
+
+            SqlParameter[] cachedParameters;
+
+            cachedParameters = paramCache[hashKey] as SqlParameter[]; 
+            if (cachedParameters == null) 
+            { 
+                SqlParameter[] spParameters = DiscoverSpParameterSet(connection, spName, includeReturnValueParameter); 
+                paramCache[hashKey] = spParameters; 
+                cachedParameters = spParameters; 
+            }
+
+            return CloneParameters(cachedParameters); 
+        }
+
+        #endregion ²ÎÊı¼¯¼ìË÷½áÊø
+
+    } 
 }
+
+//Èç¹ûÒª»ñÈ¡Á¬½ÓÊı¾İÁ¬½Ó¶ÔÏó»ò×Ö·û´®µÄ»°£¬ÏÈÒªĞŞ¸ÄSQLHelperÀàÖĞGetConnSting() ·½·¨ÖĞµÄConfigurationManager.ConnectionStrings["ConStr"].ConnectionString;²ÅÄÜµ÷ÓÃ¡£
