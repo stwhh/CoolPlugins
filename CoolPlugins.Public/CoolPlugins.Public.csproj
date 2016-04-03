@@ -46,6 +46,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="SqlNote.cs" />
+    <Compile Include="DalHelper.cs" />
     <Compile Include="LogExceptionAttribute.cs" />
     <Compile Include="SqlHelper.cs" />
     <Compile Include="Tools\ConvertExt.cs" />
