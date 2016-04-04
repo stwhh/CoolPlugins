@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using CoolPlugins.BLL;
 using CoolPlugins.Public;
 
 namespace CoolPlugins.Web.Controllers
@@ -16,6 +17,7 @@ namespace CoolPlugins.Web.Controllers
         /// <returns></returns>
         public ActionResult Index()
         {
+            var testModel = TestBLL.GetModel();
             return View();
         }
 
