@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using CoolPlugins.Public;
+using CoolPlugins.Public.DalLibrary;
 using CoolPlugins.Public.Entities;
 
 namespace CoolPlugins.BLL

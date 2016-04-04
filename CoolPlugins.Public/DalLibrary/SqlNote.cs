@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace CoolPlugins.Public
+namespace CoolPlugins.Public.DalLibrary
 {
     public class SqlNote
     {

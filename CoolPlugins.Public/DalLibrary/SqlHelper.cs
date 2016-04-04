@@ -5,7 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Xml;
 
-namespace CoolPlugins.Public 
+namespace CoolPlugins.Public.DalLibrary 
 { 
     /// <summary> 
     /// SqlServer数据访问帮助类 

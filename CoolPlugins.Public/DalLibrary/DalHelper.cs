@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Configuration;
+using System.Collections.Specialized;
 using System.Data;
-using System.Data.Common;
 using System.Data.SqlClient;
-using System.Linq;
 using System.Reflection;
 using System.Text;
-using System.Threading.Tasks;
 
-namespace CoolPlugins.Public
+namespace CoolPlugins.Public.DalLibrary
 {
     public abstract class DalHelper
     {
@@ -57,7 +54,6 @@ namespace CoolPlugins.Public
             return tempT;
         }
 
-
         /// <summary>
         /// 以主键查询实体的指定字段
         /// </summary>
@@ -96,7 +92,6 @@ namespace CoolPlugins.Public
             }
             return tempT;
         }
-
 
         /// <summary>
         /// 以指定字段查询一个实体
@@ -142,7 +137,6 @@ namespace CoolPlugins.Public
             return tempT;
         }
 
-
         /// <summary>
         /// 以指定字段查询一个实体的字段
         /// </summary>
@@ -185,6 +179,65 @@ namespace CoolPlugins.Public
 
         #endregion
 
+        #region 查询list集合
+
+        /// <summary>
+        /// 以主键查询一个实体
+        /// </summary>
+        /// <typeparam name="T">实体对象</typeparam>
+        /// <param name="nameValues">参数集合</param>
+        /// <param name="sqlNote">sql注释</param>
+        /// <param name="dp">分页</param>
+        /// <returns>实体数据</returns>
+        public static List<T> SelectList<T>(NameValueCollection nameValues, string sqlNote, DataPage dp = null) 
+            where T : class, new()
+        {
+            var list = new List<T>();
+            var whereSql = GetWhereSql(dp,nameValues);
+
+            var selectSql = new StringBuilder(" select ");
+            var props = typeof(T).GetProperties();
+            foreach (var prop in props)
+            {
+                selectSql.Append(prop.Name + ",");
+            }
+            selectSql.Remove(selectSql.ToString().LastIndexOf(','), 1);
+            selectSql.AppendFormat(" from [{0}]", GetTableName(new T().ToString()));
+            selectSql.AppendFormat(" with(nolock) where 1=1 {0}", whereSql.Item1);
+
+            var pageSql = GetPageSql(dp,sqlNote);
+            var allSql = pageSql.Item1.Replace("--filterSql",selectSql.ToString());
+            var allParms = new SqlParameter[] {};
+            whereSql.Item2.CopyTo(allParms, 0);
+            pageSql.Item2.CopyTo(allParms,whereSql.Item1.Length);
+            try
+            {
+                using (IDataReader dr = SqlHelper.ExecuteReader(SqlHelper.GetConnection(), CommandType.Text, allSql, allParms))
+                {
+                    //Dictionary<string, int> colName = GetColNameIndex(dr);
+                    if (dr.Read())
+                    {
+                        if (dp != null && dp.PageSize > 0)
+                        {
+                            dp.RowCount = dr.GetInt32(0);
+                        }
+                        list.Add(BuildModel<T>(dr));
+                        dr.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                //记日志
+                //string errStr = "SelectModel<T>报错(" + (DateTime.Now - dNow).TotalMilliseconds + "ms):\r\n" + cmd.CommandText + "\r\n\r\n"; ;
+                //DalAid.DalErr(errStr, ex.ToString(), "DalSelectModel");
+                //throw new Exception(errStr, ex);
+            }
+            return list;
+        }
+
+
+        #endregion
 
         #region ORM框架辅助方法
         /// <summary>
@@ -269,6 +322,99 @@ namespace CoolPlugins.Public
         {
             return allName.Substring(allName.LastIndexOf('.')+1);
         }
+
+        /// <summary>
+        /// 获取where条件
+        /// </summary>
+        /// <param name="dp">分页</param>
+        /// <param name="nameValues">where条件 + 参数集合</param>
+        private static Tuple<string,SqlParameter[]> GetWhereSql(DataPage dp, NameValueCollection nameValues)
+        {
+            var whereSql = new StringBuilder();
+            var parms = new SqlParameter[]{};
+            foreach (string key in nameValues.Keys)
+            {
+                if (string.IsNullOrWhiteSpace(key)) continue;
+
+                var inValue = new StringBuilder();
+                var keyValue = nameValues[key];
+                if (keyValue.IndexOf(',')>0)
+                {
+                    foreach (var splitValue in keyValue.Split(','))
+                    {
+                        if (key.GetType() == typeof (string))
+                        {
+                            inValue.Append("'"+splitValue+"'");
+                        }
+                        if (key.GetType() == typeof (int))
+                        {
+                            inValue.Append(""+splitValue+"");
+                        }
+                    }
+                }
+                if (key.Contains("<>")||key.Contains("!="))  //!=
+                {
+                    whereSql.AppendFormat(" and {0} != {1}", key, nameValues[key]);
+                }
+                if (key.Contains("*"))  //in
+                {
+                    whereSql.AppendFormat(" and {0} in ({1})", key, inValue);                    
+                }
+                if (key.Contains("!*"))  //not in
+                {
+                    whereSql.AppendFormat(" and {0} not in ({1})", key, inValue);                    
+                }
+                if (key.IndexOf("%", StringComparison.Ordinal)==0)  //左like
+                {
+                    whereSql.AppendFormat(" and {0} like @{1}", key, key);
+                    parms[0] = new SqlParameter("@" + key, nameValues[key]);
+                }
+                if (key.LastIndexOf(key, StringComparison.Ordinal) == key.Length - 1) //右like
+                {
+                    whereSql.AppendFormat(" and {0} like '{1}'%", key, inValue);
+                    parms[1] = new SqlParameter("@" + key, nameValues[key]);                                     
+                }
+            }
+            if (!string.IsNullOrWhiteSpace(dp.OrderField))
+            {
+                whereSql.AppendFormat(" order by {0}",dp.OrderField);
+            }
+
+            return new Tuple<string, SqlParameter[]>(whereSql.ToString(), parms);
+        }
+
+        /// <summary>
+        /// 获取分页sql
+        /// </summary>
+        /// <param name="dp">分页</param>
+        /// <param name="sqlNote">sql注释</param>
+        /// <returns>sql</returns>
+        private static Tuple<string,SqlParameter[]> GetPageSql(DataPage dp,string sqlNote)
+        {
+            var parms = new SqlParameter[] { };
+            var pageSql = new StringBuilder(@"
+            declare @PageSize Int ='15';  
+            declare @PageIndex Int ='1';   
+            declare @RowCount int;         
+
+            select @RowCount =COUNT(1) FROM
+            (--filterSql) AS RowCount ;
+            select @RowCount ;  
+
+            IF(@PageIndex *@PageSize> @RowCount)
+            SET @PageIndex =@RowCount/ @PageSize+1 ;
+
+            SELECT * FROM( SELECT ROW_NUMBER() OVER (ORDER BY BSCreateDate DESC ) AS RowID,* FROM (
+            --filterSql)  tempT
+            WHERE RowID BETWEEN (@PageIndex - 1) * @PageSize+1 AND @PageIndex * @PageSize ");
+            pageSql.Append(sqlNote);
+
+            parms[0] = new SqlParameter("@PageSize",dp.PageSize);
+            parms[0] = new SqlParameter("@PageIndex ", dp.PageIndex);
+
+            return new Tuple<string, SqlParameter[]>(pageSql.ToString(), parms);
+        }
+        
         #endregion
     }
 }
