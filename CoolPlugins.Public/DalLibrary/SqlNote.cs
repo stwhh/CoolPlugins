@@ -43,7 +43,7 @@ namespace CoolPlugins.Public.DalLibrary
         /// <returns>sql注释</returns>
         public string AddSqlNote()
         {
-            return "\r\n/*项目:" + Project + ";作者:" + Author + ";备注:" + Note + "*/\r\n";
+            return "\r\n/*项目:" + Project + ";作者:" + Author + ";备注:" + Note + ";*/\r\n";
         }
 
     }

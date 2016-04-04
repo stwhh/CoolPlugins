@@ -207,9 +207,9 @@ namespace CoolPlugins.Public.DalLibrary
 
             var pageSql = GetPageSql(dp,sqlNote);
             var allSql = pageSql.Item1.Replace("--filterSql",selectSql.ToString());
-            var allParms = new SqlParameter[] {};
+            var allParms = new SqlParameter[4];
             whereSql.Item2.CopyTo(allParms, 0);
-            pageSql.Item2.CopyTo(allParms,whereSql.Item1.Length);
+            pageSql.Item2.CopyTo(allParms,2);
             try
             {
                 using (IDataReader dr = SqlHelper.ExecuteReader(SqlHelper.GetConnection(), CommandType.Text, allSql, allParms))
@@ -331,7 +331,7 @@ namespace CoolPlugins.Public.DalLibrary
         private static Tuple<string,SqlParameter[]> GetWhereSql(DataPage dp, NameValueCollection nameValues)
         {
             var whereSql = new StringBuilder();
-            var parms = new SqlParameter[]{};
+            var parms = new SqlParameter[1];
             foreach (string key in nameValues.Keys)
             {
                 if (string.IsNullOrWhiteSpace(key)) continue;
@@ -372,7 +372,12 @@ namespace CoolPlugins.Public.DalLibrary
                 if (key.LastIndexOf(key, StringComparison.Ordinal) == key.Length - 1) //右like
                 {
                     whereSql.AppendFormat(" and {0} like '{1}'%", key, inValue);
-                    parms[1] = new SqlParameter("@" + key, nameValues[key]);                                     
+                    parms[parms.Length] = new SqlParameter("@" + key, nameValues[key]);
+                }
+                else
+                {
+                    whereSql.AppendFormat(" and {0} = @{1}", key, key);
+                    parms[0] = new SqlParameter("@" + key, nameValues[key]);
                 }
             }
             if (!string.IsNullOrWhiteSpace(dp.OrderField))
@@ -391,26 +396,26 @@ namespace CoolPlugins.Public.DalLibrary
         /// <returns>sql</returns>
         private static Tuple<string,SqlParameter[]> GetPageSql(DataPage dp,string sqlNote)
         {
-            var parms = new SqlParameter[] { };
+            var parms = new SqlParameter[2] ;
             var pageSql = new StringBuilder(@"
             declare @PageSize Int ='15';  
             declare @PageIndex Int ='1';   
             declare @RowCount int;         
 
             select @RowCount =COUNT(1) FROM
-            (--filterSql) AS RowCount ;
-            select @RowCount ;  
+            (--filterSql) AS RCount ;
+            select @RowCount AS RCount;  
 
             IF(@PageIndex *@PageSize> @RowCount)
             SET @PageIndex =@RowCount/ @PageSize+1 ;
 
-            SELECT * FROM( SELECT ROW_NUMBER() OVER (ORDER BY BSCreateDate DESC ) AS RowID,* FROM (
-            --filterSql)  tempT
+            SELECT * FROM( SELECT ROW_NUMBER() OVER (ORDER BY ID DESC ) AS RowID,* FROM (
+            --filterSql) as result) AS tempT
             WHERE RowID BETWEEN (@PageIndex - 1) * @PageSize+1 AND @PageIndex * @PageSize ");
             pageSql.Append(sqlNote);
 
             parms[0] = new SqlParameter("@PageSize",dp.PageSize);
-            parms[0] = new SqlParameter("@PageIndex ", dp.PageIndex);
+            parms[1] = new SqlParameter("@PageIndex ", dp.PageIndex);
 
             return new Tuple<string, SqlParameter[]>(pageSql.ToString(), parms);
         }

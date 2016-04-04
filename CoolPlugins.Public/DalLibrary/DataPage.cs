@@ -33,7 +33,7 @@ namespace CoolPlugins.Public.DalLibrary
         /// </summary>
         public DataPage()
         {
-            PageSize = 15;
+            PageSize = 12;
             PageIndex = 1;
         }
     }
