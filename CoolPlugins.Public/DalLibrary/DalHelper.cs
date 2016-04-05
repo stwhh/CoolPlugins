@@ -207,23 +207,28 @@ namespace CoolPlugins.Public.DalLibrary
 
             var pageSql = GetPageSql(dp,sqlNote);
             var allSql = pageSql.Item1.Replace("--filterSql",selectSql.ToString());
-            var allParms = new SqlParameter[4];
-            whereSql.Item2.CopyTo(allParms, 0);
-            pageSql.Item2.CopyTo(allParms,2);
+            var allParms = new List<SqlParameter>();
+            allParms.AddRange(whereSql.Item2);
+            allParms.AddRange(pageSql.Item2);
             try
             {
-                using (IDataReader dr = SqlHelper.ExecuteReader(SqlHelper.GetConnection(), CommandType.Text, allSql, allParms))
+                using (IDataReader dr = SqlHelper.ExecuteReader(SqlHelper.GetConnection(), CommandType.Text, allSql, 
+                    allParms.ToArray()))
                 {
                     //Dictionary<string, int> colName = GetColNameIndex(dr);
                     if (dr.Read())
                     {
                         if (dp != null && dp.PageSize > 0)
                         {
-                            dp.RowCount = dr.GetInt32(0);
+                            dp.RowCount = Convert.ToInt32(dr["RCount"]);
                         }
-                        list.Add(BuildModel<T>(dr));
-                        dr.Close();
                     }
+                    dr.NextResult(); //读下一行数据，在这里就是下一个table
+                    while (dr.Read())
+                    {
+                        list.Add(BuildModel<T>(dr));
+                    }
+                    dr.Close();
                 }
             }
             catch (Exception ex)
@@ -274,22 +279,23 @@ namespace CoolPlugins.Public.DalLibrary
         /// 将dataReader转换成model
         /// </summary>
         /// <typeparam name="T">实体</typeparam>
-        /// <param name="idr">IDataReader 对象</param>
+        /// <param name="dr">IDataReader 对象</param>
         /// <returns>实体</returns>
-        public static T BuildModel<T>(IDataReader idr)
+        public static T BuildModel<T>(IDataReader dr)
         {
             Type modelType = typeof(T);
             T model = Activator.CreateInstance<T>();
 
-            for (int i=0;i<idr.FieldCount;i++)
+            if (!dr.Read()) return model;
+            for (int i = 0; i < dr.FieldCount; i++)
             {
-                if (string.IsNullOrWhiteSpace(idr[i].ToString()) || idr[i] is DBNull)
+                if (string.IsNullOrWhiteSpace(dr[i].ToString()) || dr[i] is DBNull)
                     continue;
-                PropertyInfo propertyInfo = modelType.GetProperty(idr.GetName(i), BindingFlags.GetProperty | BindingFlags.Public 
-                    | BindingFlags.Instance | BindingFlags.IgnoreCase);
+                PropertyInfo propertyInfo = modelType.GetProperty(dr.GetName(i),
+                    BindingFlags.GetProperty | BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
                 if (propertyInfo != null)
                 {
-                    propertyInfo.SetValue(model, CheckType(idr[i], propertyInfo.PropertyType), null);
+                    propertyInfo.SetValue(model, CheckType(dr[i], propertyInfo.PropertyType), null);
                 }
             }
             return model;
@@ -328,10 +334,10 @@ namespace CoolPlugins.Public.DalLibrary
         /// </summary>
         /// <param name="dp">分页</param>
         /// <param name="nameValues">where条件 + 参数集合</param>
-        private static Tuple<string,SqlParameter[]> GetWhereSql(DataPage dp, NameValueCollection nameValues)
+        private static Tuple<string,List<SqlParameter>> GetWhereSql(DataPage dp, NameValueCollection nameValues)
         {
             var whereSql = new StringBuilder();
-            var parms = new SqlParameter[1];
+            var parmsList = new List<SqlParameter>();
             foreach (string key in nameValues.Keys)
             {
                 if (string.IsNullOrWhiteSpace(key)) continue;
@@ -367,17 +373,17 @@ namespace CoolPlugins.Public.DalLibrary
                 if (key.IndexOf("%", StringComparison.Ordinal)==0)  //左like
                 {
                     whereSql.AppendFormat(" and {0} like @{1}", key, key);
-                    parms[0] = new SqlParameter("@" + key, nameValues[key]);
+                    parmsList.Add(new SqlParameter("@" + key, nameValues[key]));
                 }
                 if (key.LastIndexOf(key, StringComparison.Ordinal) == key.Length - 1) //右like
                 {
                     whereSql.AppendFormat(" and {0} like '{1}'%", key, inValue);
-                    parms[parms.Length] = new SqlParameter("@" + key, nameValues[key]);
+                    parmsList.Add(new SqlParameter("@" + key, nameValues[key]));
                 }
                 else
                 {
                     whereSql.AppendFormat(" and {0} = @{1}", key, key);
-                    parms[0] = new SqlParameter("@" + key, nameValues[key]);
+                    parmsList.Add(new SqlParameter("@" + key, nameValues[key]));
                 }
             }
             if (!string.IsNullOrWhiteSpace(dp.OrderField))
@@ -385,7 +391,7 @@ namespace CoolPlugins.Public.DalLibrary
                 whereSql.AppendFormat(" order by {0}",dp.OrderField);
             }
 
-            return new Tuple<string, SqlParameter[]>(whereSql.ToString(), parms);
+            return new Tuple<string, List<SqlParameter>>(whereSql.ToString(), parmsList);
         }
 
         /// <summary>
@@ -394,12 +400,10 @@ namespace CoolPlugins.Public.DalLibrary
         /// <param name="dp">分页</param>
         /// <param name="sqlNote">sql注释</param>
         /// <returns>sql</returns>
-        private static Tuple<string,SqlParameter[]> GetPageSql(DataPage dp,string sqlNote)
+        private static Tuple<string,List<SqlParameter>> GetPageSql(DataPage dp,string sqlNote)
         {
-            var parms = new SqlParameter[2] ;
+            var parmsList = new List<SqlParameter>() ;
             var pageSql = new StringBuilder(@"
-            declare @PageSize Int ='15';  
-            declare @PageIndex Int ='1';   
             declare @RowCount int;         
 
             select @RowCount =COUNT(1) FROM
@@ -414,10 +418,10 @@ namespace CoolPlugins.Public.DalLibrary
             WHERE RowID BETWEEN (@PageIndex - 1) * @PageSize+1 AND @PageIndex * @PageSize ");
             pageSql.Append(sqlNote);
 
-            parms[0] = new SqlParameter("@PageSize",dp.PageSize);
-            parms[1] = new SqlParameter("@PageIndex ", dp.PageIndex);
+            parmsList.Add(new SqlParameter("@PageSize", dp.PageSize));
+            parmsList.Add(new SqlParameter("@PageIndex ", dp.PageIndex));
 
-            return new Tuple<string, SqlParameter[]>(pageSql.ToString(), parms);
+            return new Tuple<string, List<SqlParameter>>(pageSql.ToString(), parmsList);
         }
         
         #endregion
