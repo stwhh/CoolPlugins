@@ -23,5 +23,39 @@ namespace CoolPlugins.Web
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
         }
+
+        /// <summary>
+        /// 404等错误页面处理
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
+        protected void Application_Error(Object sender, EventArgs e)
+        {
+            //当路径出错，无法找到控制器时，不会执行FilterConfig中的OnException，而会在这里捕获。
+            //当发生404错误时，执行完OnException后，还会执行到这里。
+            //当发生其他错误，会执行OnException，但在base.OnException中已经处理完错误，不会再到这里执行。
+            var lastError = HttpContext.Current.Server.GetLastError();
+            if (lastError != null)
+            {
+                var httpError = lastError as HttpException;
+
+                if (httpError != null)
+                {
+                    //Server.ClearError();
+                    switch (httpError.GetHttpCode())
+                    {
+                        case 403:
+                            HttpContext.Current.Response.Redirect("/home/errorPage");
+                            break;
+                        case 404:
+                            HttpContext.Current.Response.Redirect("/home/errorPage");
+                            break;
+                        case 500:
+                            HttpContext.Current.Response.Redirect("/home/errorPage");
+                            break;
+                    }
+                }
+            }
+        }
     }
 }

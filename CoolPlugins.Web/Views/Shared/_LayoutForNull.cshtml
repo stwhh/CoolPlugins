@@ -21,7 +21,6 @@
 
 </head>
 <body>
-@RenderSection("modalLayer",required:false); 
 <!--顶部导航栏-->
 <nav class="navbar navbar-inverse navbar-fixed-top ">
     <div class="container-fluid">
@@ -51,17 +50,12 @@
     </div>
 </nav>
 
-<div class="container-fluid mbody ">
-    <!--左侧-->
-    @RenderSection("leftPart",required:false)
+<div class="container">
     <!--中间-->
     @RenderBody()
-    <!--右侧-->
-    @RenderSection("rightPart",required:false)
 </div>
 
 @Scripts.Render("~/bundles/jquery")
-@RenderSection("scripts", required: false)
 
 <!--底部-->
 <nav class="footer navbar-inverse navbar-fixed-bottom">

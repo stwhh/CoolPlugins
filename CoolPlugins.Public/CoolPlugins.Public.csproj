@@ -46,7 +46,12 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="SqlHelper.cs" />
+    <Compile Include="DalLibrary\DalExt.cs" />
+    <Compile Include="DalLibrary\DataPage.cs" />
+    <Compile Include="DalLibrary\SqlNote.cs" />
+    <Compile Include="DalLibrary\DalHelper.cs" />
+    <Compile Include="LogExceptionAttribute.cs" />
+    <Compile Include="DalLibrary\SqlHelper.cs" />
     <Compile Include="Tools\ConvertExt.cs" />
     <Compile Include="Entities\Announce.cs">
       <DependentUpon>TableEntities.tt</DependentUpon>
