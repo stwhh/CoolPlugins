@@ -286,7 +286,6 @@ namespace CoolPlugins.Public.DalLibrary
             Type modelType = typeof(T);
             T model = Activator.CreateInstance<T>();
 
-            if (!dr.Read()) return model;
             for (int i = 0; i < dr.FieldCount; i++)
             {
                 if (string.IsNullOrWhiteSpace(dr[i].ToString()) || dr[i] is DBNull)
