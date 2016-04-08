@@ -143,6 +143,7 @@ img {
     line-height: 20px; 
     margin-right: 10px; 
     padding-right: 10px;
+    margin-bottom:20px;
 }
 
 .detailContent {
@@ -202,4 +203,15 @@ img {
     margin-right: 1%; 
     font-size: 1.5em; 
     line-height: 40px; 
+}
+
+.pluginDescription {
+     color: #5E5E5E; 
+     background-color: #F9F9F9; 
+     padding:15px;
+     margin-top:15px;
+}
+
+.pluginDescriptionDetail {
+    margin-top:15px;
 }
