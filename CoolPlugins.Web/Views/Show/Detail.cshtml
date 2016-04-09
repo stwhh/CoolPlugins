@@ -68,16 +68,15 @@
 
 <script>
     $(document).ready(function () {
-        $('#summernote').summernote();
+        $('#summernote').summernote({
+            height: 200, // set editor height
+            minHeight: null, // set minimum height of editor
+            maxHeight: null, // set maximum height of editor
+            focus: true,
+            lang: 'zh-CN'
+        });
     });
 
-    $('.summernote').summernote({
-        height: 200, // set editor height
-        minHeight: null, // set minimum height of editor
-        maxHeight: null, // set maximum height of editor
-        focus: true,
-        lang: 'zh-CN'
-    });
 
     $(".btnAuthor").hover(function() {
         $(this).css({ "background-color": "#F5F5F5" });
