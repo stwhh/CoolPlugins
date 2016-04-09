@@ -214,4 +214,17 @@ img {
 
 .pluginDescriptionDetail {
     margin-top:15px;
+    margin-bottom:15px;
 }
+
+.discussProject {
+    margin:15px 0;
+    border-top: 1px solid #e8e8e8;
+    /*border-bottom: 1px solid #e8e8e8;*/
+}
+
+ .submitDiscussForm {
+     /*float: right;*/  /*浮动会影响位置*/
+     margin-top:-10px;
+     text-align: right;
+ }
