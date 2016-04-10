@@ -50,6 +50,7 @@
     <Compile Include="DalLibrary\DataPage.cs" />
     <Compile Include="DalLibrary\SqlNote.cs" />
     <Compile Include="DalLibrary\DalHelper.cs" />
+    <Compile Include="Entities\ITableBase.cs" />
     <Compile Include="LogExceptionAttribute.cs" />
     <Compile Include="DalLibrary\SqlHelper.cs" />
     <Compile Include="Tools\ConvertExt.cs" />

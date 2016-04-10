@@ -18,8 +18,11 @@ namespace CoolPlugins.BLL
         /// <returns></returns>
         public static User GetModel()
         {
-            var userModel = DalHelper.SelectModel<User>(1, new SqlNote("孙涛", "查询用户实体信息").AddSqlNote());
-            return userModel;
+            //var userModel1 = DalHelper.SelectModel<User>(1, new SqlNote("孙涛", "根据主键查询实体").AddSqlNote());
+            //var userModel2 = DalHelper.SelectModel<User>(1,new List<string>{"RealName"}, new SqlNote("孙涛", "根据主键查询指定字段").AddSqlNote());
+            //var userModel3 = DalHelper.SelectModel<User>("UserCode","liji" , new SqlNote("孙涛", "根据指定键值查询实体").AddSqlNote());
+            var userModel4 = DalHelper.SelectModel<User>("UserCode","liji" ,new List<string>{"RealName"}, new SqlNote("孙涛", "根据指定键值查询指定字段").AddSqlNote());
+            return userModel4;
         }
 
         /// <summary>
