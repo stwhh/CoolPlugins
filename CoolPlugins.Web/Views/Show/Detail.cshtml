@@ -3,6 +3,10 @@
     Layout = "~/Views/Shared/_LayoutForNull.cshtml";
 }
 
+<link href="~/Content/summernote/summernote.css" rel="stylesheet" />
+<script src="~/Content/summernote/summernote.js"></script>
+<script src="~/Content/summernote/lang/summernote-zh-CN.js"></script>
+
 <div class="row detail">
     <div class="col-lg-10 col-md-12 col-sm-12">
         <div class="detailHeader">
@@ -22,10 +26,26 @@
                 <a href="#" class="btn btn-success"><i class="fa fa-eye"></i>&nbsp;在线预览</a>
                 <a href="#" class="btn btn-danger"><i class="fa fa-cloud-download"></i>&nbsp;立即下载</a>
             </div>
+            <div class="pluginDescription">
+                插件描述：文字轮播无缝滚动
+            </div>
+            <div class="pluginDescriptionDetail">
+                summerNote插件是最好用的bootstrap编辑器，用法直接引用css和js文件即可。
+                summerNote插件是最好用的bootstrap编辑器，用法直接引用css和js文件即可。
+            </div>
+            <div class="discussProject">
+                <h3>参与讨论
+                    <span class="fs14">&nbsp;回答他人问题获取炫币</span>
+                </h3>
+            </div>
+            <div id="discussContent">
+                <p>Hello Summernote</p>
+            </div>
+            <div class="submitDiscussForm">
+                <button onclick="submitDiscuss()" type="button" data-loading-text="Loading..." class="btn btn-primary">
+                    发表评论 </button>
+            </div>
         </div>
-
-        
-
     </div>
 
     <div class="col-lg-2 visible-lg">
@@ -33,7 +53,7 @@
             <h6>作者</h6>
             
             <a href="#"><img src="~/Content/Images/user1.png" /></a>
-            <div class="zuox f">
+            <div class="">
                 <h4>醉酒思红颜</h4>
             </div>
             <button type="button" class="btn btnAuthor mgtop10" onclick="Author()"><i class="fa fa-plus-circle"></i> 关注作者 <span>(0)</span></button>
@@ -52,11 +72,20 @@
 </div>
 
 <script>
+    $(document).ready(function () {
+        $('#discussContent').summernote({
+            height: 200, // set editor height
+            minHeight: 200, // set minimum height of editor
+            maxHeight: 200, // set maximum height of editor
+            focus: true,
+            lang: 'zh-CN'
+        });
+    });
+
+    //关注作者鼠标经过效果
     $(".btnAuthor").hover(function() {
         $(this).css({ "background-color": "#F5F5F5" });
     }, function() {
         $(this).css({ "background-color": "#fff" });
     });
-        
-       
 </script>

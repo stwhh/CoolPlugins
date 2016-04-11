@@ -17,7 +17,7 @@ namespace CoolPlugins.Web.Controllers
         /// <returns></returns>
         public ActionResult Index()
         {
-            //var userModel = TestBLL.GetModel();
+            var userModel = TestBLL.GetModel();
             var userList = TestBLL.GetList();
             return View();
         }

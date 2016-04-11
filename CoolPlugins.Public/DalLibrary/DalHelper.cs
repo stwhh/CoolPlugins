@@ -5,6 +5,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Reflection;
 using System.Text;
+using CoolPlugins.Public.Entities;
 
 namespace CoolPlugins.Public.DalLibrary
 {
@@ -18,7 +19,8 @@ namespace CoolPlugins.Public.DalLibrary
         /// <param name="keyVlaue">主键</param>
         /// <param name="sqlNote">sql注释</param>
         /// <returns>实体数据</returns>
-        public static T SelectModel<T>(int keyVlaue, string sqlNote) where T : class, new()
+        public static T SelectModel<T>(int keyVlaue, string sqlNote) 
+            where T : class,ITableBase<T>, new()
         {
             var tempT = new T();
             var stbSql = new StringBuilder("select ");
@@ -28,8 +30,8 @@ namespace CoolPlugins.Public.DalLibrary
                 stbSql.Append(prop.Name + ",");
             }
             stbSql.Remove(stbSql.ToString().LastIndexOf(','), 1);
-            stbSql.AppendFormat(" from [{0}]",GetTableName(tempT.ToString()));
-            stbSql.Append(" with(nolock) where 1=1 and Id=@keyVlaue");
+            stbSql.AppendFormat(" from [{0}]", tempT.GetTableName());
+            stbSql.AppendFormat(" with(nolock) where 1=1 and [{0}]=@keyVlaue", tempT.GetPrimaryKey());
             stbSql.Append(sqlNote);
             var sqlParms = new SqlParameter("@keyVlaue", keyVlaue);
             try
@@ -62,13 +64,14 @@ namespace CoolPlugins.Public.DalLibrary
         /// <param name="onlyField">只查询的字段</param>
         /// <param name="sqlNote">sql注释</param>
         /// <returns>实体数据</returns>
-        public static T SelectModel<T>(int keyVlaue, List<string> onlyField, string sqlNote) where T : class, new()
+        public static T SelectModel<T>(int keyVlaue, List<string> onlyField, string sqlNote) 
+            where T : class,ITableBase<T>, new()
         {
             var tempT = new T();
             var stbSql = new StringBuilder("select ");
             stbSql.Append(string.Join(",", onlyField.ToArray()));
-            stbSql.Append(" from " + GetTableName(tempT.ToString()));
-            stbSql.Append(" with(nolock) where 1=1 and Id=@keyVlaue");
+            stbSql.AppendFormat(" from [{0}]", tempT.GetTableName());
+            stbSql.AppendFormat(" with(nolock) where 1=1 and {0} =@keyVlaue", tempT.GetPrimaryKey());
             stbSql.Append(sqlNote);
             var sqlParms = new SqlParameter("@keyVlaue", keyVlaue);
             try
@@ -101,7 +104,8 @@ namespace CoolPlugins.Public.DalLibrary
         /// <param name="fieldName">字段名称</param>
         /// <param name="filedValue">字段值</param>
         /// <returns>实体数据</returns>
-        public static T SelectModel<T>(string fieldName, string filedValue, string sqlNote) where T : class, new()
+        public static T SelectModel<T>(string fieldName, string filedValue, string sqlNote) 
+            where T : class,ITableBase<T>, new()
         {
             var tempT = new T();
             var stbSql = new StringBuilder("select ");
@@ -111,10 +115,10 @@ namespace CoolPlugins.Public.DalLibrary
                 stbSql.Append(prop.Name + ",");
             }
             stbSql.Remove(stbSql.ToString().LastIndexOf(','), 1);
-            stbSql.Append(" from " + GetTableName(tempT.ToString()));
-            stbSql.AppendFormat(" with(nolock) where 1=1 and {0}={1}", fieldName, "@" + filedValue);
+            stbSql.AppendFormat(" from [{0}]", tempT.GetTableName());
+            stbSql.AppendFormat(" with(nolock) where 1=1 and {0}={1}", fieldName, "@" + fieldName);
             stbSql.Append(sqlNote);
-            var sqlParms = new SqlParameter("@filedValue", filedValue);
+            var sqlParms = new SqlParameter("@" + fieldName, filedValue);
             try
             {
                 using (IDataReader dr = SqlHelper.ExecuteReader(SqlHelper.GetConnection(), CommandType.Text, stbSql.ToString(), sqlParms))
@@ -146,15 +150,16 @@ namespace CoolPlugins.Public.DalLibrary
         /// <param name="fieldName">字段名称</param>
         /// <param name="filedValue">字段值</param>
         /// <returns>实体数据</returns>
-        public static T SelectModel<T>(string fieldName, string filedValue, List<string> onlyField, string sqlNote) where T : class, new()
+        public static T SelectModel<T>(string fieldName, string filedValue, List<string> onlyField, string sqlNote) 
+            where T : class,ITableBase<T>, new()
         {
             var tempT = new T();
             var stbSql = new StringBuilder("select ");
             stbSql.Append(string.Join(",", onlyField.ToArray()));
-            stbSql.Append(" from " + GetTableName(tempT.ToString()));
-            stbSql.AppendFormat(" with(nolock) where 1=1 and {0}={1}", fieldName, "@" + filedValue);
+            stbSql.AppendFormat(" from [{0}]", tempT.GetTableName());
+            stbSql.AppendFormat(" with(nolock) where 1=1 and {0}={1}", fieldName, "@" + fieldName);
             stbSql.Append(sqlNote);
-            var sqlParms = new SqlParameter("@filedValue", filedValue);
+            var sqlParms = new SqlParameter("@" + fieldName, filedValue);
             try
             {
                 using (IDataReader dr = SqlHelper.ExecuteReader(SqlHelper.GetConnection(), CommandType.Text, stbSql.ToString(), sqlParms))
@@ -190,7 +195,7 @@ namespace CoolPlugins.Public.DalLibrary
         /// <param name="dp">分页</param>
         /// <returns>实体数据</returns>
         public static List<T> SelectList<T>(NameValueCollection nameValues, string sqlNote, DataPage dp = null) 
-            where T : class, new()
+            where T : class,ITableBase<T>, new()
         {
             var list = new List<T>();
             var whereSql = GetWhereSql(dp,nameValues);
@@ -202,7 +207,7 @@ namespace CoolPlugins.Public.DalLibrary
                 selectSql.Append(prop.Name + ",");
             }
             selectSql.Remove(selectSql.ToString().LastIndexOf(','), 1);
-            selectSql.AppendFormat(" from [{0}]", GetTableName(new T().ToString()));
+            selectSql.AppendFormat(" from [{0}]", new T().GetTableName());
             selectSql.AppendFormat(" with(nolock) where 1=1 {0}", whereSql.Item1);
 
             var pageSql = GetPageSql(dp,sqlNote);
@@ -316,16 +321,6 @@ namespace CoolPlugins.Public.DalLibrary
                 conversionType = nullableConverter.UnderlyingType;
             }
             return Convert.ChangeType(value, conversionType);
-        }
-
-        /// <summary>
-        /// 根据带命名空间的表名获取表名称
-        /// </summary>
-        /// <param name="allName">全名</param>
-        /// <returns>表名</returns>
-        private static string GetTableName(string allName) 
-        {
-            return allName.Substring(allName.LastIndexOf('.')+1);
         }
 
         /// <summary>

@@ -143,6 +143,7 @@ img {
     line-height: 20px; 
     margin-right: 10px; 
     padding-right: 10px;
+    margin-bottom:20px;
 }
 
 .detailContent {
@@ -203,3 +204,27 @@ img {
     font-size: 1.5em; 
     line-height: 40px; 
 }
+
+.pluginDescription {
+     color: #5E5E5E; 
+     background-color: #F9F9F9; 
+     padding:15px;
+     margin-top:15px;
+}
+
+.pluginDescriptionDetail {
+    margin-top:15px;
+    margin-bottom:15px;
+}
+
+.discussProject {
+    margin:15px 0;
+    border-top: 1px solid #e8e8e8;
+    /*border-bottom: 1px solid #e8e8e8;*/
+}
+
+ .submitDiscussForm {
+     /*float: right;*/  /*浮动会影响位置*/
+     margin-top:-10px;
+     text-align: right;
+ }
