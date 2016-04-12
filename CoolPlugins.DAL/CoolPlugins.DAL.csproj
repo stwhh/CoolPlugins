@@ -30,6 +30,9 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="Cool.DalLibrary">
+      <HintPath>..\References\Cool.DalLibrary.dll</HintPath>
+    </Reference>
     <Reference Include="System" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
@@ -40,6 +43,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestDLL.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\CoolPlugins.Public\CoolPlugins.Public.csproj">
+      <Project>{aaa84d1e-1cfb-4a6f-9802-89b56792b76d}</Project>
+      <Name>CoolPlugins.Public</Name>
+    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
