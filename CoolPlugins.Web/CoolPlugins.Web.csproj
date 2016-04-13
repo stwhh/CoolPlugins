@@ -295,6 +295,7 @@
     <Content Include="Content\summernote\font\summernote.eot" />
     <Content Include="Content\summernote\font\summernote.ttf" />
     <Content Include="Content\summernote\font\summernote.woff" />
+    <Content Include="App_Data\TCConfig\TCSmartFramework.DataAccess.config" />
     <None Include="Scripts\jquery-1.7.1.intellisense.js" />
     <Content Include="Scripts\jquery-1.7.1.js" />
     <Content Include="Scripts\jquery-1.7.1.min.js" />
@@ -336,7 +337,6 @@
     <Content Include="Views\Home\ErrorPage.cshtml" />
   </ItemGroup>
   <ItemGroup>
-    <Folder Include="App_Data\" />
     <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>

@@ -1,4 +1,10 @@
-﻿using System;
+﻿
+
+
+
+
+
+using System;
 using System.Collections.Generic;
 using System.Data;
 using TCSmartFramework.DataAccess;
@@ -10,11 +16,11 @@ namespace CoolPlugins.Public.Entities
 	{
 		#region  User表元信息
 		public const string DbName = "BenqOA";//库名
-		public const string TableName = "User";//表名
+		public const string TableName = "[User]";//表名
 		public const string PkName = "ID";//主键名
-		public const string InsertSql = @"insert Into " + DbName + ".dbo.User (UserCode,RealName,UserPwd,Sex,Age,Phone,QQ,Email,Address,EntryDate,PositionCode,DepartmentCode,CreateTime,CreateUserCode,ModifyTime,ModifyUserCode,Addtion1,Addtion2)values(@UserCode,@RealName,@UserPwd,@Sex,@Age,@Phone,@QQ,@Email,@Address,@EntryDate,@PositionCode,@DepartmentCode,@CreateTime,@CreateUserCode,@ModifyTime,@ModifyUserCode,@Addtion1,@Addtion2);";
-		public const string SelectSql = @"select ID,UserCode,RealName,UserPwd,Sex,Age,Phone,QQ,Email,Address,EntryDate,PositionCode,DepartmentCode,CreateTime,CreateUserCode,ModifyTime,ModifyUserCode,Addtion1,Addtion2 from " + DbName + ".dbo.User with(nolock) where 1 = 1 ";
-		public const string DeleteSql = @"delete from  " + DbName + ".dbo.User where ID = @ID;";
+		public const string InsertSql = @"insert Into " + DbName + ".dbo.[User] (UserCode,RealName,UserPwd,Sex,Age,Phone,QQ,Email,Address,EntryDate,PositionCode,DepartmentCode,CreateTime,CreateUserCode,ModifyTime,ModifyUserCode,Addtion1,Addtion2)values(@UserCode,@RealName,@UserPwd,@Sex,@Age,@Phone,@QQ,@Email,@Address,@EntryDate,@PositionCode,@DepartmentCode,@CreateTime,@CreateUserCode,@ModifyTime,@ModifyUserCode,@Addtion1,@Addtion2);";
+		public const string SelectSql = @"select ID,UserCode,RealName,UserPwd,Sex,Age,Phone,QQ,Email,Address,EntryDate,PositionCode,DepartmentCode,CreateTime,CreateUserCode,ModifyTime,ModifyUserCode,Addtion1,Addtion2 from " + DbName + ".dbo.[User] with(nolock) where 1 = 1 ";
+		public const string DeleteSql = @"delete from  " + DbName + ".dbo.[User] where ID = @ID;";
 		public static readonly Dictionary<string,Type> FieldNames;//字段
 		public static readonly Dictionary<string, string> FieldNotes;//字备注
 		static User()
