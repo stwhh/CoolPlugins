@@ -1,0 +1,16 @@
+﻿<#@ template debug="True" hostspecific="True" language="C#" #>
+<#@ assembly name="$(TargetDir)Cool.T4Base.dll" #>
+<#@ assembly name="$(TargetDir)Cool.DalLibrary.dll" #>
+<#@ import namespace="Cool.DalLibrary" #>
+<#@ import namespace="System.Text.RegularExpressions" #>
+<#@ import namespace="System.Diagnostics" #>
+<#@ output extension=".cs" #>
+<#
+	//Debugger.Launch(); Debugger.Break();//调试用template debug="True" hostspecific="True" language="C#"
+	Cool.T4Base.DbField dbRender = new Cool.T4Base.DbField(this.Host.TemplateFile,"BenqOA");//数据库链接名称可以不传,默认MetaDataDB
+	dbRender.NamespaceStr="CoolPlugins.Public.Entities";
+    //dbRender.SetDB("TCCLine",true);//区别大小写,第二参数为true时刷新数据库
+    //dbRender.NoTable.Add("P_GoodsXinGuang");//不要生成的表
+    dbRender.OnlyTable.Add("User");//只要生成的表
+    this.WriteLine(dbRender.Render());
+#>
